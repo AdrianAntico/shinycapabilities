@@ -1,0 +1,40 @@
+# R build and check output
+*.tar.gz
+*.Rcheck/
+..Rcheck/
+
+# JavaScript dependencies and transient build output
+tools/javascript/node_modules/
+tools/javascript/.vite/
+tools/javascript/.vite-temp/
+*.map
+
+# Browser and test output
+.playwright-cli/
+playwright-report/
+test-results/
+output/
+screenshots/
+
+# Local caches, logs, and temporary files
+.cache/
+.pytest_cache/
+*.log
+*.tmp
+*.temp
+*~
+
+# IDE and operating-system state
+.Rproj.user/
+*.Rproj
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Credentials and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key

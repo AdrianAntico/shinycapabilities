@@ -1,0 +1,28 @@
+name: JavaScript bundle
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/javascript/package-lock.json
+      - name: Install locked dependencies
+        working-directory: tools/javascript
+        run: npm ci
+      - name: Rebuild production assets
+        working-directory: tools/javascript
+        run: npm run build
+      - name: Verify bundle/source consistency
+        run: git diff --exit-code -- inst/htmlwidgets/lib/shinycapabilities.js inst/htmlwidgets/lib/shinycapabilities.css

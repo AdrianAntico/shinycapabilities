@@ -1,0 +1,32 @@
+Package: shinycapabilities
+Title: Capability-Oriented Workflow Canvas for Shiny
+Version: 0.1.0
+Authors@R:
+    person("Adrian", "Antico", email = "adrianantico@gmail.com",
+           role = c("aut", "cre"))
+Author: Adrian Antico [aut, cre]
+Maintainer: Adrian Antico <adrianantico@gmail.com>
+Description: An experimental capability-oriented workflow canvas for Shiny.
+    JavaScript owns responsive graph interaction while R owns capability
+    registration, validation, dependency planning, scheduling, execution,
+    caching, staleness, cancellation, and artifact references. Host
+    applications provide domain-specific capabilities.
+License: MIT + file LICENSE
+URL: https://github.com/AdrianAntico/shinycapabilities
+BugReports: https://github.com/AdrianAntico/shinycapabilities/issues
+Encoding: UTF-8
+Depends:
+    R (>= 4.1.0)
+Imports:
+    callr,
+    digest,
+    htmltools,
+    htmlwidgets,
+    jsonlite,
+    shiny
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+RoxygenNote: 7.3.3
+SystemRequirements: Node.js and npm (optional; required only to rebuild bundled
+    browser assets)

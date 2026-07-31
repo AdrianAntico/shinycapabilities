@@ -1,0 +1,45 @@
+name: R CMD check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: ${{ matrix.config.os }} / R ${{ matrix.config.r }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { os: windows-latest, r: release }
+          - { os: ubuntu-latest, r: release }
+          - { os: macos-latest, r: release }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+      - name: Run package tests
+        shell: Rscript {0}
+        run: |
+          testthat::test_local(reporter = "summary", stop_on_failure = TRUE)
+      - name: Build source archive
+        shell: bash
+        run: R CMD build .
+      - name: Check freshly built archive
+        shell: bash
+        run: |
+          archive="$(ls -1t shinycapabilities_*.tar.gz | head -n 1)"
+          test -n "$archive"
+          R CMD check "$archive" --no-manual

@@ -1,0 +1,11 @@
+# Maintainer review is required for governed contracts and publication surfaces.
+/R/ @AdrianAntico
+/NAMESPACE @AdrianAntico
+/DESCRIPTION @AdrianAntico
+/tools/javascript/ @AdrianAntico
+/inst/htmlwidgets/ @AdrianAntico
+/tests/ @AdrianAntico
+/.github/ @AdrianAntico
+/LICENSE @AdrianAntico
+/inst/docs/DEPENDENCY-LICENSES.md @AdrianAntico
+/NEWS.md @AdrianAntico

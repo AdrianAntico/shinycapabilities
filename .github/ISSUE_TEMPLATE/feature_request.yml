@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose a generic, backward-compatible workflow capability.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: User need
+      description: Describe the generic workflow problem, not a host-specific analytic.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed contract
+      description: Explain behavior, ownership, and alternatives.
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Contract impact
+      options:
+        - No public contract change
+        - Public R API
+        - Serialization
+        - Typed ports
+        - Runtime/caching/cancellation
+        - JavaScript bridge
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and migration
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependency and license impact
+    validations:
+      required: true
