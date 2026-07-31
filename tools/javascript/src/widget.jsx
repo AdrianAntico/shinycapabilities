@@ -37,9 +37,22 @@ const ALLOWED_ICONS = new Set([
   "tree-conifer", "user", "warning-sign", "wrench", "zoom-in"
 ]);
 const safeIcon = (value) => ALLOWED_ICONS.has(value) ? value : "asterisk";
+const FONT_AWESOME_ALIASES = {
+  adjust: "sliders", "ban-circle": "ban", cog: "gear", dashboard: "gauge",
+  edit: "pen", "eye-open": "eye", flash: "bolt", hdd: "hard-drive",
+  "list-alt": "rectangle-list", "map-marker": "location-dot",
+  move: "up-down-left-right", "ok-circle": "circle-check", picture: "image",
+  pushpin: "thumbtack", random: "shuffle", refresh: "rotate", saved: "floppy-disk",
+  search: "magnifying-glass", send: "paper-plane", stats: "chart-column",
+  tasks: "list-check", th: "table-cells", "th-large": "table-cells-large",
+  "th-list": "list", time: "clock", tower: "tower-broadcast", transfer: "right-left",
+  "tree-deciduous": "tree", "tree-conifer": "tree",
+  "warning-sign": "triangle-exclamation", "zoom-in": "magnifying-glass-plus"
+};
 const CapabilityIcon = ({ value, className = "" }) => {
   const icon = safeIcon(value);
-  return <span className={`${className} glyphicon glyphicon-${icon}`} data-shinycap-icon={icon} aria-hidden="true" />;
+  const rendered = FONT_AWESOME_ALIASES[icon] || icon;
+  return <i className={`${className} sc-rendered-icon fas fa-${rendered}`} data-shinycap-icon={icon} aria-hidden="true" />;
 };
 
 function emit(element, type, payload, graph) {

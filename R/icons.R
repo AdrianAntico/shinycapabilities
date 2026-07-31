@@ -18,10 +18,39 @@ normalize_shinycapabilities_icon <- function(icon_id) {
       icon_id %in% shinycapabilities_icon_allowlist()) icon_id else "asterisk"
 }
 
+# The public icon vocabulary is renderer-neutral. Shiny 1.11 ships Font
+# Awesome 6, while the original alpha renderer used Bootstrap 3 glyphicon
+# classes. Bootstrap 5 hosts do not ship that font, so translate the stable
+# neutral identifiers deterministically at this rendering boundary.
+shinycapabilities_fontawesome_icon <- function(icon_id) {
+  icon_id <- normalize_shinycapabilities_icon(icon_id)
+  aliases <- c(
+    "adjust" = "sliders", "ban-circle" = "ban", "cog" = "gear",
+    "dashboard" = "gauge", "edit" = "pen", "eye-open" = "eye",
+    "flash" = "bolt", "hdd" = "hard-drive", "list-alt" = "rectangle-list",
+    "map-marker" = "location-dot", "move" = "up-down-left-right",
+    "ok-circle" = "circle-check", "picture" = "image", "pushpin" = "thumbtack",
+    "random" = "shuffle", "refresh" = "rotate", "saved" = "floppy-disk",
+    "search" = "magnifying-glass", "send" = "paper-plane", "stats" = "chart-column",
+    "tasks" = "list-check", "th" = "table-cells", "th-large" = "table-cells-large",
+    "th-list" = "list", "time" = "clock", "tower" = "tower-broadcast",
+    "transfer" = "right-left", "tree-deciduous" = "tree",
+    "tree-conifer" = "tree", "warning-sign" = "triangle-exclamation",
+    "zoom-in" = "magnifying-glass-plus"
+  )
+  rendered <- unname(aliases[icon_id])
+  if (length(rendered) && !is.na(rendered) && nzchar(rendered)) rendered else icon_id
+}
+
 shinycapabilities_icon_tag <- function(icon_id, class = NULL) {
   icon_id <- normalize_shinycapabilities_icon(icon_id)
-  htmltools::tags$span(
-    class = paste(c(class, "glyphicon", paste0("glyphicon-", icon_id)), collapse = " "),
-    `data-shinycap-icon` = icon_id, `aria-hidden` = "true"
+  icon <- shiny::icon(
+    shinycapabilities_fontawesome_icon(icon_id),
+    class = paste(c(class, "sc-rendered-icon"), collapse = " ")
   )
+  icon$attribs$role <- NULL
+  icon$attribs$`aria-label` <- NULL
+  icon$attribs$`aria-hidden` <- "true"
+  icon$attribs$`data-shinycap-icon` <- icon_id
+  icon
 }
