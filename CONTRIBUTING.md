@@ -39,3 +39,7 @@ Host-specific analytics, arbitrary executable payloads, full browser data
 transfer, embedded secrets, breaking formats without migration, unattributed
 bundles, generated bundles without source changes, and broad unjustified
 rewrites are generally rejected.
+
+Host integrations should use the versioned contracts in `COMPATIBILITY.md`.
+Additive presentation metadata belongs in the host catalog; generic runtime
+and browser integration surfaces belong in this package.

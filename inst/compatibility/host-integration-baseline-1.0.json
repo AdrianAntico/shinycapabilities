@@ -1,0 +1,54 @@
+{
+  "captured_contract": "pre-host-integration-compatibility-layer-1.0",
+  "workflow_schema": "1.0.0",
+  "exports_used_by_analytics_shiny_app": [
+    "accept_workflow_proposal", "capability_canvas_server",
+    "capability_canvas_ui", "capability_registry", "capability_registry_add",
+    "capability_registry_get", "capability_registry_list",
+    "cleanup_workflow_runtime", "collapse_workflow", "config_field",
+    "execute_workflow_plan", "expand_workflow_composite",
+    "graph_fingerprint", "normalize_workflow_graph", "output_placement",
+    "plan_workflow", "port_type", "register_capability",
+    "restore_workflow_document", "run_workflow_runtime",
+    "serialize_workflow_document", "tick_workflow_runtime",
+    "validate_workflow", "workflow_document", "workflow_proposal",
+    "workflow_runtime", "workflow_runtime_snapshot"
+  ],
+  "module_return_fields": [
+    "graph", "cache", "selection", "plan", "runtime", "is_running",
+    "run_plan", "cancel_workflow", "set_graph", "set_cache"
+  ],
+  "legacy_messages": [
+    "shinycapabilities:set-graph",
+    "shinycapabilities:connection-result"
+  ],
+  "legacy_widget_input_suffix": "_event",
+  "legacy_insert_event": "shinycapabilities:insert",
+  "legacy_drag_mime": "application/x-shinycapability",
+  "legacy_fit_command": "fitView",
+  "payload_shapes": {
+    "set_graph": ["id", "graph"],
+    "connection_result": ["id", "edge", "result"],
+    "widget_event": ["type", "graph", "event-specific fields"],
+    "insert": ["capabilityId", "x", "y"]
+  },
+  "widget_events": [
+    "capability_dropped", "node_selected", "connection_proposed",
+    "connection_accepted", "connection_rejected", "connection_removed",
+    "move_completed", "resize_completed", "node_removed", "node_duplicated"
+  ],
+  "module_ids_used_by_host": [
+    "run_selected", "run_dependencies", "run_all", "cancel_node",
+    "cancel_branch", "cancel_workflow", "force_run", "clear_cache",
+    "reset_failed", "inspect_plan", "runtime_summary", "plan", "canvas"
+  ],
+  "host_private_selectors": [
+    ".sc-workbench", ".sc-palette", ".sc-palette-item", ".sc-canvas-column",
+    ".sc-inspector", ".sc-inspector-resizer", ".capability_canvas",
+    ".react-flow__node", ".react-flow__minimap"
+  ],
+  "bundle_sha256": {
+    "javascript": "44B4E55587B9070CE6CEBCFF63034EEF18898C9D70A28E86B153BFCBDD53FAC8",
+    "css": "AF29A7CEFB4546DA68F3DD9AE943DF2100D17E0B6AF5518FE17C747B90623825"
+  }
+}

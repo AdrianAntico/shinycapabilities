@@ -4,13 +4,13 @@
 #' @param explanations Named node explanations.
 #' @param connection_explanations Named connection explanations.
 #' @param overall_rationale Overall plan rationale.
-#' @param missing_evidence Missing evidence or unresolved questions.
+#' @param unresolved_requirements Missing inputs, constraints, or unresolved questions.
 #' @param recommended_execution_order Proposed topological execution order.
 #' @param groups Optional proposed composite groups.
 #' @export
 workflow_proposal <- function(
     id, graph, explanations = list(), connection_explanations = list(),
-    overall_rationale = "", missing_evidence = list(),
+    overall_rationale = "", unresolved_requirements = list(),
     recommended_execution_order = character(), groups = list()) {
   graph <- normalize_workflow_graph(graph)
   graph$nodes <- lapply(graph$nodes, function(node) {
@@ -24,7 +24,7 @@ workflow_proposal <- function(
     explanations = explanations,
     connection_explanations = connection_explanations,
     overall_rationale = as.character(overall_rationale),
-    missing_evidence = missing_evidence,
+    unresolved_requirements = unresolved_requirements,
     recommended_execution_order = as.character(recommended_execution_order),
     groups = groups
   ), class = "shinycap_workflow_proposal")

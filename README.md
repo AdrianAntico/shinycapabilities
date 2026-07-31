@@ -5,9 +5,9 @@ executable capability workflows in Shiny. It combines a React Flow graph editor
 with R-owned typed contracts, dependency planning, scheduling, caching,
 staleness, cancellation, proposals, composites, and artifact placement.
 
-The package is deliberately generic. Host applications register their own
-analytical, research, decision, or delivery capabilities; host logic and private
-data do not belong in this repository.
+The package is deliberately generic. Host applications register all
+domain-specific capabilities, vocabulary, presentation, and behavior; host
+logic and private resources do not belong in this repository.
 
 ## Why R owns execution
 
@@ -15,8 +15,8 @@ JavaScript owns smooth browser interaction: graph presentation, selection,
 dragging, resizing, connection gestures, pan, zoom, minimap, and fit-to-view.
 R/Shiny remains authoritative for registration, validation, typed connections,
 dependency closure, execution, lifecycle, caching, cancellation, and artifacts.
-The browser never needs full datasets, fitted models, credentials, arbitrary R
-objects, or executable node payloads.
+The browser never needs private resources, credentials, arbitrary R objects, or
+executable node payloads.
 
 ## Features
 
@@ -76,30 +76,28 @@ shinycapabilities::run_capability_demo()
 ## Register a host capability
 
 ```r
-profile <- register_capability(
-  id = "example.profile",
+formatter <- register_capability(
+  id = "example.format",
   version = "1.0.0",
-  display_name = "Profile data",
-  description = "Create a bounded profile artifact.",
-  category = "Explore",
-  inputs = list(dataset = port_type("dataset")),
-  outputs = list(profile = port_type("data_profile")),
+  display_name = "Format document",
+  description = "Create a bounded publication artifact.",
+  category = "Publish",
+  inputs = list(document = port_type("document")),
+  outputs = list(artifact = port_type("publication_artifact")),
   config = list(
-    include_missingness = config_field(
-      "checkbox", "Include missingness", default = TRUE
-    )
+    style = config_field("select", "Style", "plain", c("plain", "formal"))
   ),
   validate = function(context, config, inputs) {
-    list(valid = !is.null(inputs$dataset))
+    list(valid = !is.null(inputs$document))
   },
   execute = function(context, config, inputs) {
-    list(profile = summary(inputs$dataset))
+    list(artifact = list(document = inputs$document, style = config$style))
   },
-  implementation_fingerprint = "example-profile-v1"
+  implementation_fingerprint = "example-format-v1"
 )
 
 registry <- capability_registry()
-capability_registry_add(registry, profile)
+capability_registry_add(registry, formatter)
 ```
 
 Hosts may provide custom Shiny configuration UI/server hooks. Typed connection
@@ -126,8 +124,7 @@ structure while presenting a composite node. Planning expands composites before
 validation and execution.
 
 `workflow_document()` stores the normalized graph separately from secondary
-`output_placements`, so arranging artifacts does not mutate analytical workflow
-semantics.
+`output_placements`, so arranging artifacts does not mutate workflow semantics.
 
 ## Development
 

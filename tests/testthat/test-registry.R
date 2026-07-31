@@ -1,18 +1,19 @@
 test_that("registry stores closed capability definitions", {
   registry <- capability_registry()
   capability_registry_add(registry, register_capability(
-    id = "source.data", version = "1.0.0", display_name = "Source",
-    outputs = list(dataset = port_type("dataset")),
-    execute = function(context, config, inputs) list(dataset = data.frame(x = 1))
+    id = "source.value", version = "1.0.0", display_name = "Source",
+    outputs = list(value = port_type("value")),
+    execute = function(context, config, inputs) list(value = 1)
   ))
-  expect_equal(capability_registry_get(registry, "source.data")$version, "1.0.0")
+  expect_equal(capability_registry_get(registry, "source.value")$version, "1.0.0")
   expect_length(capability_registry_list(registry), 1)
 })
 
-test_that("default catalog covers the product capability boundary", {
+test_that("default catalog is the neutral document example", {
   registry <- default_capability_catalog()
-  expect_length(capability_registry_list(registry), 17)
-  expect_true(all(c("eda.profile", "model.train", "ai.analyze", "report.generate") %in%
+  expect_length(capability_registry_list(registry), 4)
+  expect_true(all(c(
+    "document.intake", "document.cleanup", "document.approval", "document.publish"
+  ) %in%
     vapply(capability_registry_list(registry), `[[`, character(1), "id")))
 })
-

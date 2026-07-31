@@ -17,6 +17,30 @@ port_type <- function(type, required = TRUE, multiple = FALSE, description = NUL
   )
 }
 
+normalize_capability_presentation <- function(value = list()) {
+  value <- value %||% list()
+  explicit <- length(value) > 0L
+  allowed <- c(
+    "group_id", "group_label", "group_order", "display_order", "icon_id",
+    "short_summary", "compact_summary", "input_port_labels",
+    "output_port_labels", "emphasis", "accessibility_label"
+  )
+  unknown <- setdiff(names(value), allowed)
+  if (length(unknown)) {
+    stop("Unknown presentation metadata: ", paste(unknown, collapse = ", "), call. = FALSE)
+  }
+  defaults <- list(
+    group_id = "other", group_label = "Other", group_order = 1000,
+    display_order = 1000, icon_id = "generic", short_summary = NULL,
+    compact_summary = NULL, input_port_labels = list(),
+    output_port_labels = list(), emphasis = "default",
+    accessibility_label = NULL
+  )
+  result <- utils::modifyList(defaults, value, keep.null = TRUE)
+  attr(result, "host_supplied") <- explicit
+  result
+}
+
 #' Define a schema-driven configuration field
 #' @param type Control type.
 #' @param label Human-readable field label.
@@ -30,7 +54,7 @@ config_field <- function(type, label, default = NULL, choices = NULL, required =
                          minimum = NULL, maximum = NULL, step = NULL, help = NULL) {
   supported <- c(
     "select", "multi_select", "text", "numeric", "checkbox", "slider",
-    "dataset", "column", "formula", "custom"
+    "resource", "property", "expression", "custom"
   )
   if (!type %in% supported) stop("Unsupported configuration field type: ", type, call. = FALSE)
   list(
@@ -65,10 +89,11 @@ capability_registry <- function() {
 #' @param expected_duration Expected duration label or seconds.
 #' @param progress_support Whether phase-level or granular progress is supported.
 #' @param timeout Maximum elapsed seconds before a typed timeout.
-#' @param retry_policy Closed retry policy. Analytical defaults never retry.
+#' @param retry_policy Closed retry policy. Automatic retries are disabled by default.
 #' @param maximum_concurrency Optional capability-specific concurrency ceiling.
 #' @param resource_hints Domain-neutral resource metadata.
-#' @param icon,style Presentation metadata.
+#' @param icon,style Legacy presentation metadata.
+#' @param presentation Optional host-supplied, domain-neutral presentation metadata.
 #' @export
 register_capability <- function(
     id, version, display_name, description = "", category = "Other",
@@ -80,7 +105,8 @@ register_capability <- function(
     expected_duration = NULL, progress_support = c("phase", "none", "granular"),
     timeout = 300, retry_policy = c("none", "explicit"),
     maximum_concurrency = NULL,
-    resource_hints = list(), icon = NULL, style = list()) {
+    resource_hints = list(), icon = NULL, style = list(),
+    presentation = list()) {
   cache_policy <- match.arg(cache_policy)
   execution_profile <- match.arg(execution_profile)
   progress_support <- match.arg(progress_support)
@@ -118,7 +144,8 @@ register_capability <- function(
     timeout = timeout,
     retry_policy = retry_policy,
     maximum_concurrency = maximum_concurrency,
-    resource_hints = resource_hints, icon = icon, style = style
+    resource_hints = resource_hints, icon = icon, style = style,
+    presentation = normalize_capability_presentation(presentation)
   )
   class(definition) <- "shinycap_capability"
   definition

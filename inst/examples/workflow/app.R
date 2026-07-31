@@ -2,47 +2,50 @@ library(shiny)
 library(shinycapabilities)
 
 registry <- default_capability_catalog()
-initial_graph <- list(
+graph <- list(
   nodes = list(
     list(
-      id = "dataset_source_1", capability_id = "dataset.source",
-      position = list(x = 40, y = 190), state = "ready",
-      config = list(label = "Customer activity", notes = "Governed demo dataset")
+      id = "intake", capability_id = "document.intake",
+      position = list(x = 40, y = 120), state = "ready",
+      config = list(label = "Document intake")
     ),
     list(
-      id = "eda_profile_1", capability_id = "eda.profile",
-      position = list(x = 380, y = 100), state = "ready",
-      config = list(label = "Profile data", notes = "")
+      id = "cleanup", capability_id = "document.cleanup",
+      position = list(x = 360, y = 120), state = "ready",
+      config = list(label = "Text cleanup")
     ),
     list(
-      id = "visualize_compose_1", capability_id = "visualize.compose",
-      position = list(x = 380, y = 340), state = "ready",
-      config = list(label = "Explain distribution", notes = "")
+      id = "approval", capability_id = "document.approval",
+      position = list(x = 680, y = 120), state = "ready",
+      config = list(label = "Human approval")
+    ),
+    list(
+      id = "publish", capability_id = "document.publish",
+      position = list(x = 1000, y = 120), state = "ready",
+      config = list(label = "Publication")
     )
   ),
   edges = list(
     list(
-      id = "source_to_eda", source = "dataset_source_1", source_port = "dataset",
-      target = "eda_profile_1", target_port = "dataset"
+      id = "intake_cleanup", source = "intake", source_port = "document",
+      target = "cleanup", target_port = "document"
     ),
     list(
-      id = "source_to_visual", source = "dataset_source_1", source_port = "dataset",
-      target = "visualize_compose_1", target_port = "dataset"
+      id = "cleanup_approval", source = "cleanup", source_port = "document",
+      target = "approval", target_port = "document"
+    ),
+    list(
+      id = "approval_publish", source = "approval", source_port = "approved",
+      target = "publish", target_port = "approved"
     )
   )
 )
 
-ui <- fluidPage(
-  tags$head(tags$title("Capability Workflow Studio")),
-  capability_canvas_ui("workflow", registry)
-)
-
+ui <- fluidPage(capability_canvas_ui("workflow", registry))
 server <- function(input, output, session) {
   capability_canvas_server(
-    "workflow", registry, initial_graph,
-    context = list(project_id = "demo_project")
+    "workflow", registry, graph,
+    context = list(text = "  Neutral document example  ")
   )
 }
-
 shinyApp(ui, server)
-

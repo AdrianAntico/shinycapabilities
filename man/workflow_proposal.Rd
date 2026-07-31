@@ -10,7 +10,7 @@ workflow_proposal(
   explanations = list(),
   connection_explanations = list(),
   overall_rationale = "",
-  missing_evidence = list(),
+  unresolved_requirements = list(),
   recommended_execution_order = character(),
   groups = list()
 )
@@ -26,7 +26,7 @@ workflow_proposal(
 
 \item{overall_rationale}{Overall plan rationale.}
 
-\item{missing_evidence}{Missing evidence or unresolved questions.}
+\item{unresolved_requirements}{Missing inputs, constraints, or unresolved questions.}
 
 \item{recommended_execution_order}{Proposed topological execution order.}
 

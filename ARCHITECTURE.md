@@ -5,7 +5,7 @@
 `shinycapabilities` is a generic capability-oriented workflow framework for
 Shiny. It provides a typed graph editor, deterministic planning contracts,
 governed execution lifecycle, and artifact references. Host applications own
-domain-specific analytical capabilities and their data.
+domain-specific capabilities and their resources.
 
 ## Authority boundaries
 
@@ -14,8 +14,8 @@ domain-specific analytical capabilities and their data.
 - R/Shiny owns capability registration, typed-port validation, dependency
   planning, scheduling, execution, caching, staleness, cancellation, and
   artifacts.
-- JavaScript never receives full datasets, fitted models, credentials,
-  arbitrary R objects, executable payloads, or generic opaque passthrough.
+- JavaScript never receives private host resources, credentials, arbitrary R
+  objects, executable payloads, or generic opaque passthrough.
 - AI-proposed nodes remain non-executable until accepted by the host.
 - Saved workflow documents contain no process handles or transient runtime
   state.
@@ -59,3 +59,21 @@ Installed users consume tracked assets in `inst/htmlwidgets/lib` and do not need
 Node.js. Maintainers rebuild those assets with `npm ci && npm run build` from
 `tools/javascript`. Bundle changes must have corresponding source or lockfile
 changes and pass the drift check in CI.
+
+## Host integration boundary
+
+The package owns graph semantics, execution scheduling, caching, cancellation,
+artifacts, workflow serialization, restoration, and the versioned browser
+bridge. Hosts own their capability catalogs and product-specific presentation.
+
+Hosts provide presentation through `register_capability(presentation = ...)`
+and integrate runtime controls through the additive `controls` member returned
+by `capability_canvas_server()`. Stable DOM hooks use `data-shinycap-*`
+attributes and documented `--shinycap-*` variables. `.sc-*` selectors and
+legacy message names remain compatibility aliases, not the preferred API.
+
+Core contains no domain taxonomy, semantic keyword recognition, inferred icons,
+friendly-port vocabulary, or host capability IDs. Presentation is a closed,
+explicit host contract. The default catalog is the neutral document example.
+
+See `COMPATIBILITY.md` for supported versions and migration guidance.

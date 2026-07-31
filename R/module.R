@@ -1,44 +1,75 @@
 capability_presentation <- function(capability) {
-    category <- capability$category %||% "Other"
-    semantic <- tolower(paste(capability$id, capability$display_name, category))
-    group <- if (grepl("dataset|data quality|prepar|profile", semantic)) "Data"
-    else if (grepl("eda|association|target|explor", semantic)) "Explore"
-    else if (grepl("model|regression|classification|forecast", semantic)) "Model"
-    else if (grepl("explain|importance|dependence|shap", semantic)) "Explain"
-    else if (grepl("causal", semantic)) "Causal"
-    else if (grepl("decision|alternative|scenario|optim|recommend", semantic)) "Decision"
-    else if (grepl("research|evidence", semantic)) "Research"
-    else if (grepl("report|brief|visual", semantic)) "Delivery"
-    else category
-    icon <- if (grepl("dataset", semantic)) "\u25a6"
-    else if (grepl("prepar", semantic)) "\u2699"
-    else if (grepl("quality", semantic)) "\u2713"
-    else if (grepl("explor|eda|profile", semantic)) "\u2301"
-    else if (grepl("association|statistic", semantic)) "\u2211"
-    else if (grepl("regression", semantic)) "\u2197"
-    else if (grepl("classification", semantic)) "\u25eb"
-    else if (grepl("forecast|time", semantic)) "\u25f7"
-    else if (grepl("visual|plot", semantic)) "\u25a5"
-    else if (grepl("research", semantic)) "\u2315"
-    else if (grepl("evidence|synthesis", semantic)) "\u25ce"
-    else if (grepl("causal", semantic)) "\u21c4"
-    else if (grepl("optim", semantic)) "\u2316"
-    else if (grepl("decision|alternative|scenario|recommend", semantic)) "\u25c6"
-    else if (grepl("report|brief|delivery", semantic)) "\u25a4"
-    else if (grepl("model", semantic)) "\u25c7"
-    else "\u25c7"
-    list(
-      icon = if (is.null(capability$icon) || capability$icon %in% c("", "\u25c7")) icon else capability$icon,
-      label = capability$display_name,
-      category = group,
-      accent = tolower(group),
-      description = capability$description,
-      search = tolower(paste(capability$id, capability$display_name,
-        capability$description, category, group))
+  supplied <- isTRUE(attr(capability$presentation, "host_supplied"))
+  metadata <- capability$presentation %||% normalize_capability_presentation()
+  group_label <- if (supplied) metadata$group_label else capability$category %||% "Other"
+  icon <- if (supplied) metadata$icon_id else capability$icon %||% "\u25c7"
+  list(
+    icon = icon,
+    icon_id = metadata$icon_id,
+    label = capability$display_name,
+    category = group_label,
+    group_id = if (supplied) metadata$group_id else "other",
+    group_order = metadata$group_order,
+    display_order = metadata$display_order,
+    accent = if (supplied) metadata$emphasis else "default",
+    description = capability$description,
+    short_summary = metadata$short_summary %||% capability$description,
+    compact_summary = metadata$compact_summary %||% capability$display_name,
+    accessibility_label = metadata$accessibility_label %||%
+      paste(capability$display_name, "capability"),
+    input_port_labels = metadata$input_port_labels,
+    output_port_labels = metadata$output_port_labels,
+    search = tolower(paste(
+      capability$id, capability$display_name, capability$description, group_label
+    ))
+  )
+}
+
+#' Validate visible capability identities in a palette
+#'
+#' Capability ids remain the execution identity. This validator separately ensures
+#' that users are not shown two indistinguishable labels in the same visible
+#' category.
+#' @param registry A capability registry.
+#' @return A list with `valid` and deterministic `findings` entries.
+#' @export
+validate_capability_palette <- function(registry) {
+  capabilities <- capability_registry_list(registry)
+  presentations <- lapply(capabilities, capability_presentation)
+  normalize_identity <- function(value) {
+    tolower(gsub("[[:space:]]+", " ", trimws(enc2utf8(value))))
+  }
+  keys <- vapply(seq_along(capabilities), function(index) {
+    paste(
+      normalize_identity(presentations[[index]]$category),
+      normalize_identity(presentations[[index]]$label),
+      sep = "\r"
     )
+  }, character(1))
+  duplicated_keys <- sort(unique(keys[duplicated(keys)]))
+  findings <- lapply(duplicated_keys, function(key) {
+    indexes <- which(keys == key)
+    list(
+      code = "ambiguous_palette_identity",
+      severity = "error",
+      category = presentations[[indexes[[1]]]]$category,
+      label = presentations[[indexes[[1]]]]$label,
+      capability_ids = sort(vapply(capabilities[indexes], `[[`, character(1), "id")),
+      message = paste0(
+        "Palette category '", presentations[[indexes[[1]]]]$category,
+        "' contains multiple capabilities labeled '",
+        presentations[[indexes[[1]]]]$label, "'."
+      )
+    )
+  })
+  list(valid = !length(findings), findings = findings)
 }
 
 palette_ui <- function(namespace, registry) {
+  validation <- validate_capability_palette(registry)
+  if (!validation$valid) {
+    stop(validation$findings[[1]]$message, call. = FALSE)
+  }
   capabilities <- capability_registry_list(registry)
   capabilities <- capabilities[!duplicated(vapply(capabilities, `[[`, character(1), "id"))]
   presentations <- lapply(capabilities, capability_presentation)
@@ -61,8 +92,11 @@ palette_ui <- function(namespace, registry) {
             `data-capability-id` = capability$id,
             `data-canvas-id` = namespace("canvas"),
             `data-search` = item$search,
+            `data-shinycap-part` = "capability",
+            `data-shinycap-group` = item$group_id,
+            `data-shinycap-emphasis` = item$accent,
             title = item$description,
-            `aria-label` = paste("Insert", item$label, "capability"),
+            `aria-label` = paste("Insert", item$accessibility_label),
             htmltools::tags$span(class = "sc-palette-icon", `aria-hidden` = "true", item$icon),
             htmltools::tags$strong(item$label)
           )
@@ -87,11 +121,11 @@ config_control <- function(namespace, name, definition, value = NULL) {
     slider = shiny::sliderInput(id, definition$label,
       min = definition$minimum %||% 0, max = definition$maximum %||% 100,
       value = value %||% definition$minimum %||% 0, step = definition$step),
-    dataset = shiny::selectInput(id, definition$label, definition$choices %||% character(),
+    resource = shiny::selectInput(id, definition$label, definition$choices %||% character(),
       selected = value),
-    column = shiny::selectInput(id, definition$label, definition$choices %||% character(),
+    property = shiny::selectInput(id, definition$label, definition$choices %||% character(),
       selected = value),
-    formula = shiny::textAreaInput(id, definition$label, value = value %||% "", rows = 3),
+    expression = shiny::textAreaInput(id, definition$label, value = value %||% "", rows = 3),
     custom = htmltools::tags$div(class = "sc-custom-field",
       htmltools::tags$strong(definition$label),
       htmltools::tags$p(definition$help %||% "Host-provided custom UI.")),
@@ -109,11 +143,14 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE)
   ns <- shiny::NS(id)
   htmltools::tagList(
     htmltools::tags$script(htmltools::HTML(
-      "document.addEventListener('dragstart',function(e){const p=e.target.closest('.sc-palette-item');if(!p)return;e.dataTransfer.setData('application/x-shinycapability',p.dataset.capabilityId);e.dataTransfer.effectAllowed='copy';});"
+      "document.addEventListener('dragstart',function(e){const p=e.target.closest('[data-shinycap-part=\"capability\"],.sc-palette-item');if(!p)return;e.dataTransfer.setData('application/vnd.shinycapabilities.capability+json;version=1',JSON.stringify({bridgeVersion:'1.0.0',capabilityId:p.dataset.capabilityId}));e.dataTransfer.setData('application/x-shinycapability',p.dataset.capabilityId);e.dataTransfer.effectAllowed='copy';});"
     )),
     htmltools::tags$div(
       class = "sc-workbench",
-      htmltools::tags$aside(class = "sc-palette",
+      `data-shinycap-part` = "workbench",
+      `data-shinycap-density` = "compact",
+      htmltools::tags$aside(class = "sc-palette", `data-shinycap-part` = "palette",
+        `data-shinycap-panel` = "palette",
         htmltools::tags$div(class = "sc-pane-heading",
           htmltools::tags$span("Capabilities"),
           htmltools::tags$div(class = "sc-palette-density", role = "group",
@@ -133,7 +170,7 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE)
           type = "search", placeholder = "Search", autocomplete = "off"),
         palette_ui(ns, registry)
       ),
-      htmltools::tags$main(class = "sc-canvas-column",
+      htmltools::tags$main(class = "sc-canvas-column", `data-shinycap-part` = "canvas-column",
         if (isTRUE(toolbar)) htmltools::tags$div(class = "sc-toolbar",
           shiny::actionButton(ns("run_selected"), "Run selected"),
           shiny::actionButton(ns("run_dependencies"), "Run + dependencies"),
@@ -146,13 +183,15 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE)
           shiny::actionButton(ns("reset_failed"), "Reset failed"),
           shiny::actionButton(ns("inspect_plan"), "Inspect plan"),
           htmltools::tags$button(type = "button", class = "sc-widget-command",
-            `data-command` = "fitView", `data-target` = ns("canvas"), "Fit view")
+            `data-command` = "fitView", `data-target` = ns("canvas"),
+            `data-shinycap-command` = "fit-view", "Fit view")
         ),
         if (isTRUE(toolbar)) shiny::uiOutput(ns("runtime_summary")),
         capability_canvas_output(ns("canvas"), height = height),
         if (isTRUE(toolbar)) shiny::uiOutput(ns("plan"))
       ),
-      htmltools::tags$aside(class = "sc-inspector",
+      htmltools::tags$aside(class = "sc-inspector", `data-shinycap-part` = "inspector",
+        `data-shinycap-panel` = "inspector",
         htmltools::tags$button(
           type = "button",
           class = "sc-inspector-resizer",
@@ -169,7 +208,7 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE)
       )
     ),
     htmltools::tags$script(htmltools::HTML(sprintf(
-      "(function(){const root=document.getElementById('%s')?.closest('.sc-workbench');if(!root)return;const search=root.querySelector('.sc-palette-search');const key='shinycapabilities.paletteDensity';const setDensity=function(value){root.dataset.paletteDensity=value;sessionStorage.setItem(key,value);root.querySelectorAll('[data-palette-density]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.paletteDensity===value));});};setDensity(sessionStorage.getItem(key)||'compact');const insert=function(item){const canvas=document.getElementById(item.dataset.canvasId);if(!canvas)return;const rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new CustomEvent('shinycapabilities:insert',{bubbles:true,detail:{capabilityId:item.dataset.capabilityId,x:rect.width/2,y:rect.height/2}}));};search?.addEventListener('input',function(){const term=this.value.trim().toLowerCase();root.querySelectorAll('.sc-palette-item').forEach(function(item){item.hidden=term&&!item.dataset.search.includes(term);});root.querySelectorAll('.sc-palette-category').forEach(function(group){const match=!!group.querySelector('.sc-palette-item:not([hidden])');group.hidden=!match;if(term&&match)group.open=true;});});root.addEventListener('click',function(e){const density=e.target.closest('[data-palette-density]');if(density)setDensity(density.dataset.paletteDensity);});root.addEventListener('keydown',function(e){const item=e.target.closest('.sc-palette-item');if(item&&e.key==='Enter'){e.preventDefault();insert(item);}});})();",
+      "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"],.sc-workbench');if(!root)return;const search=root.querySelector('.sc-palette-search');const key='shinycapabilities.paletteDensity';const setDensity=function(value){root.dataset.paletteDensity=value;root.dataset.shinycapDensity=value;sessionStorage.setItem(key,value);root.querySelectorAll('[data-palette-density]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.paletteDensity===value));});};setDensity(sessionStorage.getItem(key)||'compact');const insert=function(item){const canvas=document.getElementById(item.dataset.canvasId);if(!canvas)return;const rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new CustomEvent('shinycapabilities:v1:insert',{bubbles:true,detail:{bridgeVersion:'1.0.0',capabilityId:item.dataset.capabilityId,x:rect.width/2,y:rect.height/2}}));};search?.addEventListener('input',function(){const term=this.value.trim().toLowerCase();root.querySelectorAll('.sc-palette-item').forEach(function(item){item.hidden=term&&!item.dataset.search.includes(term);});root.querySelectorAll('.sc-palette-category').forEach(function(group){const match=!!group.querySelector('.sc-palette-item:not([hidden])');group.hidden=!match;if(term&&match)group.open=true;});});root.addEventListener('click',function(e){const density=e.target.closest('[data-palette-density]');if(density)setDensity(density.dataset.paletteDensity);});root.addEventListener('keydown',function(e){const item=e.target.closest('.sc-palette-item');if(item&&e.key==='Enter'){e.preventDefault();insert(item);}});})();",
       ns("palette_search")
     )))
   )
@@ -180,9 +219,10 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE)
 #' @param registry Capability registry.
 #' @param initial_graph Initial workflow graph.
 #' @param context Host execution context.
+#' @param bind_internal_controls Bind the legacy module input IDs to runtime commands.
 #' @export
 capability_canvas_server <- function(id, registry, initial_graph = list(nodes = list(), edges = list()),
-                                     context = list()) {
+                                     context = list(), bind_internal_controls = TRUE) {
   shiny::moduleServer(id, function(input, output, session) {
     graph <- shiny::reactiveVal(normalize_workflow_graph(initial_graph))
     cache <- shiny::reactiveVal(list())
@@ -204,8 +244,9 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       if (identical(event$type, "node_selected")) selected_id(event$nodeId)
       if (identical(event$type, "connection_proposed")) {
         result <- validate_connection(registry, graph(), event$edge)
-        session$sendCustomMessage("shinycapabilities:connection-result", list(
-          id = session$ns("canvas"), edge = event$edge, result = result
+        session$sendCustomMessage("shinycapabilities:v1:connection-result", list(
+          bridgeVersion = "1.0.0", id = session$ns("canvas"),
+          edge = event$edge, result = result
         ))
       }
     }, ignoreInit = TRUE)
@@ -302,6 +343,8 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       graph(normalize_workflow_graph(next_graph))
       session$sendCustomMessage("shinycapabilities:set-graph",
         list(id = session$ns("canvas"), graph = graph()))
+      session$sendCustomMessage("shinycapabilities:v1:set-graph",
+        list(bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = graph()))
     })
 
     create_plan <- function(target = NULL, force = FALSE) {
@@ -335,6 +378,8 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       graph(normalize_workflow_graph(next_graph))
       session$sendCustomMessage("shinycapabilities:set-graph",
         list(id = session$ns("canvas"), graph = graph()))
+      session$sendCustomMessage("shinycapabilities:v1:set-graph",
+        list(bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = graph()))
     }
     poll_runtime <- function() {
       runtime <- active_runtime()
@@ -369,18 +414,16 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       publish_runtime(workflow_runtime_snapshot(runtime))
     }
 
-    shiny::observeEvent(input$run_selected, {
+    command_run_selected <- function() {
       if (!is.null(selected_id())) run_plan(create_plan(selected_id()))
-    })
-    shiny::observeEvent(input$run_dependencies, {
-      if (!is.null(selected_id())) run_plan(create_plan(selected_id()))
-    })
-    shiny::observeEvent(input$run_all, run_plan(create_plan()))
-    shiny::observeEvent(input$force_run, run_plan(create_plan(selected_id(), force = TRUE)))
-    shiny::observeEvent(input$clear_cache, {
+    }
+    command_run_dependencies <- command_run_selected
+    command_run_all <- function() run_plan(create_plan())
+    command_force_run <- function() run_plan(create_plan(selected_id(), force = TRUE))
+    command_clear_cache <- function() {
       if (is.null(active_runtime())) cache(list())
-    })
-    shiny::observeEvent(input$reset_failed, {
+    }
+    command_reset_failed <- function() {
       next_graph <- graph()
       next_graph$nodes <- lapply(next_graph$nodes, function(node) {
         if (node$state %in% c("failed", "blocked", "cancelled")) node$state <- "ready"
@@ -389,15 +432,17 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       graph(normalize_workflow_graph(next_graph))
       session$sendCustomMessage("shinycapabilities:set-graph",
         list(id = session$ns("canvas"), graph = graph()))
-    })
-    shiny::observeEvent(input$cancel_node, {
+      session$sendCustomMessage("shinycapabilities:v1:set-graph",
+        list(bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = graph()))
+    }
+    command_cancel_node <- function() {
       runtime <- active_runtime()
       if (!is.null(runtime) && !is.null(selected_id())) {
         cancel_workflow_node(runtime, selected_id())
         publish_runtime(workflow_runtime_snapshot(runtime))
       }
-    })
-    shiny::observeEvent(input$cancel_branch, {
+    }
+    command_cancel_branch <- function() {
       runtime <- active_runtime()
       if (!is.null(runtime) && !is.null(selected_id())) {
         node <- selected_node()
@@ -413,19 +458,38 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         }
         publish_runtime(workflow_runtime_snapshot(runtime))
       }
-    })
-    shiny::observeEvent(input$cancel_workflow, {
+    }
+    command_cancel_workflow <- function() {
       runtime <- active_runtime()
       if (!is.null(runtime)) {
         cancel_workflow_runtime(runtime)
         publish_runtime(workflow_runtime_snapshot(runtime))
       }
-    })
+    }
+    command_inspect_plan <- function() last_plan(create_plan(selected_id()))
+    command_fit_view <- function() {
+      payload <- list(
+        bridgeVersion = "1.0.0", id = session$ns("canvas"),
+        command = "fit-view"
+      )
+      session$sendCustomMessage("shinycapabilities:v1:command", payload)
+    }
+    if (isTRUE(bind_internal_controls)) {
+      shiny::observeEvent(input$run_selected, command_run_selected())
+      shiny::observeEvent(input$run_dependencies, command_run_dependencies())
+      shiny::observeEvent(input$run_all, command_run_all())
+      shiny::observeEvent(input$force_run, command_force_run())
+      shiny::observeEvent(input$clear_cache, command_clear_cache())
+      shiny::observeEvent(input$reset_failed, command_reset_failed())
+      shiny::observeEvent(input$cancel_node, command_cancel_node())
+      shiny::observeEvent(input$cancel_branch, command_cancel_branch())
+      shiny::observeEvent(input$cancel_workflow, command_cancel_workflow())
+      shiny::observeEvent(input$inspect_plan, command_inspect_plan())
+    }
     session$onSessionEnded(function() {
-      runtime <- active_runtime()
+      runtime <- shiny::isolate(active_runtime())
       if (!is.null(runtime)) cleanup_workflow_runtime(runtime)
     })
-    shiny::observeEvent(input$inspect_plan, last_plan(create_plan(selected_id())))
 
     custom_servers_started <- new.env(parent = emptyenv())
     shiny::observeEvent(selected_id(), {
@@ -482,8 +546,28 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       graph(normalize_workflow_graph(value))
       session$sendCustomMessage("shinycapabilities:set-graph",
         list(id = session$ns("canvas"), graph = graph()))
+      session$sendCustomMessage("shinycapabilities:v1:set-graph",
+        list(bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = graph()))
       invisible(graph())
     }
+    controls <- list(
+      contract_version = "1.0.0",
+      run_selected = command_run_selected,
+      run_with_dependencies = command_run_dependencies,
+      run_workflow = command_run_all,
+      cancel_node = command_cancel_node,
+      cancel_branch = command_cancel_branch,
+      cancel_workflow = command_cancel_workflow,
+      force_run = command_force_run,
+      clear_cache = command_clear_cache,
+      reset_failed = command_reset_failed,
+      inspect_plan = command_inspect_plan,
+      fit_view = command_fit_view,
+      replace_graph = set_graph,
+      replace_cache = function(value) cache(value),
+      selection = shiny::reactive(selected_id()),
+      runtime = shiny::reactive(runtime_snapshot())
+    )
     list(graph = shiny::reactive(graph()), cache = shiny::reactive(cache()),
          selection = shiny::reactive(selected_id()), plan = shiny::reactive(last_plan()),
          runtime = shiny::reactive(runtime_snapshot()),
@@ -493,6 +577,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
            runtime <- active_runtime()
            if (!is.null(runtime)) cancel_workflow_runtime(runtime)
          },
-         set_graph = set_graph, set_cache = function(value) cache(value))
+         set_graph = set_graph, set_cache = function(value) cache(value),
+         controls = controls, contract_version = "1.0.0")
   })
 }

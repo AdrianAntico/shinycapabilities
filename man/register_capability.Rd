@@ -29,7 +29,8 @@ register_capability(
   maximum_concurrency = NULL,
   resource_hints = list(),
   icon = NULL,
-  style = list()
+  style = list(),
+  presentation = list()
 )
 }
 \arguments{
@@ -69,13 +70,15 @@ register_capability(
 
 \item{timeout}{Maximum elapsed seconds before a typed timeout.}
 
-\item{retry_policy}{Closed retry policy. Analytical defaults never retry.}
+\item{retry_policy}{Closed retry policy. Automatic retries are disabled by default.}
 
 \item{maximum_concurrency}{Optional capability-specific concurrency ceiling.}
 
 \item{resource_hints}{Domain-neutral resource metadata.}
 
-\item{icon, style}{Presentation metadata.}
+\item{icon, style}{Legacy presentation metadata.}
+
+\item{presentation}{Optional host-supplied, domain-neutral presentation metadata.}
 }
 \description{
 Register a capability definition

@@ -2,10 +2,11 @@
 % Please edit documentation in R/catalog.R
 \name{default_capability_catalog}
 \alias{default_capability_catalog}
-\title{Create the exploratory default capability catalog}
+\title{Create a neutral document-workflow example catalog}
 \usage{
 default_capability_catalog()
 }
 \description{
-Create the exploratory default capability catalog
+The default catalog demonstrates generic typed workflow composition. Hosts
+must register all domain vocabulary and behavior themselves.
 }

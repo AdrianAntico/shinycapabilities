@@ -19,29 +19,36 @@ import "./widget.css";
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const byId = (values) => new Map(values.map((value) => [value.id, value]));
-const friendlyPort = (name) => ({
-  bundle: "Data",
-  dataset: "Data",
-  analysis: "Analysis",
-  evidence: "Evidence",
-  research: "Research",
-  synthesis: "Evidence synthesis",
-  report: "Report",
-  model: "Model"
-}[name] || String(name).replaceAll("_", " "));
+const BRIDGE_VERSION = "1.0.0";
+const INSERT_EVENT = "shinycapabilities:v1:insert";
+const LEGACY_INSERT_EVENT = "shinycapabilities:insert";
+const CAPABILITY_MIME = "application/vnd.shinycapabilities.capability+json;version=1";
+const LEGACY_CAPABILITY_MIME = "application/x-shinycapability";
+const friendlyPort = (name, port) =>
+  port?.displayLabel || String(name).replaceAll("_", " ");
 
 function emit(element, type, payload, graph) {
   if (!window.Shiny?.setInputValue) return;
+  const nonce = `${Date.now()}-${Math.random()}`;
+  const event = { type, ...payload, graph, nonce };
   window.Shiny.setInputValue(
     `${element.id}_event`,
-    { type, ...payload, graph, nonce: `${Date.now()}-${Math.random()}` },
+    event,
+    { priority: "event" }
+  );
+  window.Shiny.setInputValue(
+    `${element.id}_event_v1`,
+    { bridgeVersion: BRIDGE_VERSION, ...event },
     { priority: "event" }
   );
 }
 
 const CapabilityNode = memo(({ id, data, selected }) => (
   <article
-      className={`sc-node sc-state-${String(data.state || "unconfigured").replace(/[^\w-]/g, "-")}${data.metadata?.proposal_status === "proposed" ? " sc-node-proposed" : ""}${data.metadata?.composite ? " sc-node-composite" : ""}`}
+    className={`sc-node sc-state-${String(data.state || "unconfigured").replace(/[^\w-]/g, "-")}${data.metadata?.proposal_status === "proposed" ? " sc-node-proposed" : ""}${data.metadata?.composite ? " sc-node-composite" : ""}`}
+    data-shinycap-part="node"
+    data-shinycap-state={data.state || "unconfigured"}
+    data-shinycap-selected={selected ? "true" : "false"}
     aria-label={`${data.displayName}, ${data.state || "unconfigured"}`}
   >
     {!data.readOnly && <NodeResizer minWidth={220} minHeight={110} isVisible={selected} />}
@@ -64,14 +71,14 @@ const CapabilityNode = memo(({ id, data, selected }) => (
             style={{ top: 82 + index * 22 }}
             aria-label={`Input ${name}, ${port.type}`}
           />
-          <span>{friendlyPort(name)}</span><code>{port.type}</code>
+          <span>{friendlyPort(name, port)}</span><code>{port.type}</code>
         </div>
       ))}
     </div>
     <div className="sc-node-ports sc-node-outputs">
       {Object.entries(data.outputs || {}).map(([name, port], index) => (
         <div className="sc-port-row" key={`out-${name}`}>
-          <span>{friendlyPort(name)}</span><code>{port.type}</code>
+          <span>{friendlyPort(name, port)}</span><code>{port.type}</code>
           <Handle
             type="source"
             position={Position.Right}
@@ -200,16 +207,29 @@ function Canvas({ element, value }) {
       setEdges(next.edges);
     };
     window.Shiny?.addCustomMessageHandler?.("shinycapabilities:set-graph", onSetGraph);
+    window.Shiny?.addCustomMessageHandler?.("shinycapabilities:v1:set-graph", onSetGraph);
   }, [element.id, readOnly, value.capabilities]);
 
   useEffect(() => {
     const handler = (event) => {
       const button = event.target.closest(".sc-widget-command");
       if (!button || button.dataset.target !== element.id) return;
-      if (button.dataset.command === "fitView") flow.fitView({ padding: 0.18, duration: 250 });
+      if (button.dataset.command === "fitView" || button.dataset.shinycapCommand === "fit-view") {
+        flow.fitView({ padding: 0.18, duration: 250 });
+      }
     };
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
+  }, [element.id, flow]);
+
+  useEffect(() => {
+    const onCommand = (message) => {
+      if (message.id !== element.id) return;
+      if (message.command === "fit-view") {
+        flow.fitView({ padding: 0.18, duration: 250 });
+      }
+    };
+    window.Shiny?.addCustomMessageHandler?.("shinycapabilities:v1:command", onCommand);
   }, [element.id, flow]);
 
   useEffect(() => {
@@ -232,13 +252,17 @@ function Canvas({ element, value }) {
         return next;
       });
     };
-    element.addEventListener("shinycapabilities:insert", insert);
-    return () => element.removeEventListener("shinycapabilities:insert", insert);
+    element.addEventListener(INSERT_EVENT, insert);
+    element.addEventListener(LEGACY_INSERT_EVENT, insert);
+    return () => {
+      element.removeEventListener(INSERT_EVENT, insert);
+      element.removeEventListener(LEGACY_INSERT_EVENT, insert);
+    };
   }, [catalog, edges, element, flow, readOnly, value.capabilities]);
 
   useEffect(() => {
     if (!window.Shiny?.addCustomMessageHandler) return;
-    window.Shiny.addCustomMessageHandler("shinycapabilities:connection-result", (message) => {
+    const onConnectionResult = (message) => {
       if (message.id !== element.id || !pendingConnection) return;
       if (message.result?.valid) {
         setEdges((current) => {
@@ -253,7 +277,9 @@ function Canvas({ element, value }) {
         }, graph());
       }
       setPendingConnection(null);
-    });
+    };
+    window.Shiny.addCustomMessageHandler("shinycapabilities:connection-result", onConnectionResult);
+    window.Shiny.addCustomMessageHandler("shinycapabilities:v1:connection-result", onConnectionResult);
   }, [element, graph, nodes, pendingConnection]);
 
   const onNodesChange = useCallback((changes) => {
@@ -283,7 +309,10 @@ function Canvas({ element, value }) {
   const onDrop = useCallback((event) => {
     event.preventDefault();
     if (readOnly) return;
-    const capabilityId = event.dataTransfer.getData("application/x-shinycapability");
+    const versioned = event.dataTransfer.getData(CAPABILITY_MIME);
+    const capabilityId = versioned
+      ? JSON.parse(versioned).capabilityId
+      : event.dataTransfer.getData(LEGACY_CAPABILITY_MIME);
     const capability = catalog.get(capabilityId);
     if (!capability) return;
     const position = flow.screenToFlowPosition({ x: event.clientX, y: event.clientY });
@@ -339,6 +368,7 @@ function Canvas({ element, value }) {
   return (
     <div
       className="sc-flow"
+      data-shinycap-part="canvas"
       ref={wrapper}
       onDrop={onDrop}
       onDragOver={(event) => {

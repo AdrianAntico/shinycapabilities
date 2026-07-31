@@ -1,8 +1,8 @@
 test_that("graph normalization is deterministic", {
   graph <- list(
     nodes = list(
-      list(id = "b", capability_id = "data.prepare", position = list(x = 2, y = 3)),
-      list(id = "a", capability_id = "dataset.source", position = list(x = 0, y = 1))
+      list(id = "b", capability_id = "value.transform", position = list(x = 2, y = 3)),
+      list(id = "a", capability_id = "value.source", position = list(x = 0, y = 1))
     ),
     edges = list()
   )
@@ -13,24 +13,23 @@ test_that("graph normalization is deterministic", {
 test_that("connection validation enforces port types", {
   registry <- capability_registry()
   capability_registry_add(registry, register_capability(
-    "source.data", "1.0.0", "Source",
-    outputs = list(dataset = port_type("dataset")),
+    "source.value", "1.0.0", "Source",
+    outputs = list(value = port_type("value")),
     execute = function(...) list()
   ))
   capability_registry_add(registry, register_capability(
-    "consume.model", "1.0.0", "Consumer",
-    inputs = list(model = port_type("model")),
+    "consume.package", "1.0.0", "Consumer",
+    inputs = list(package = port_type("package")),
     execute = function(...) list()
   ))
   graph <- list(nodes = list(
-    list(id = "source", capability_id = "source.data"),
-    list(id = "consumer", capability_id = "consume.model")
+    list(id = "source", capability_id = "source.value"),
+    list(id = "consumer", capability_id = "consume.package")
   ))
   result <- validate_connection(registry, graph, list(
-    source = "source", source_port = "dataset",
-    target = "consumer", target_port = "model"
+    source = "source", source_port = "value",
+    target = "consumer", target_port = "package"
   ))
   expect_false(result$valid)
   expect_equal(result$code, "type_mismatch")
 })
-

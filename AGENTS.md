@@ -67,3 +67,8 @@ and license review. Bundled dependencies require attribution. Public R APIs,
 typed ports, operations, runtime semantics, and serialized documents are
 backward-compatible by default; breaking changes require prior design approval,
 versioning, migration, and tests.
+
+Host integrations use the contracts in `COMPATIBILITY.md`. Prefer supported
+`data-shinycap-*` hooks, `--shinycap-*` variables, and returned module controls
+over private selectors, internal input IDs, or React Flow implementation
+classes.

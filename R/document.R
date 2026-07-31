@@ -41,6 +41,10 @@ serialize_workflow_document <- function(document) {
 #' @param value JSON text or decoded list.
 #' @export
 restore_workflow_document <- function(value) {
+  validation <- validate_workflow_document(value)
+  if (!isTRUE(validation$valid)) {
+    stop(validation$findings[[1]]$code, ": ", validation$findings[[1]]$message, call. = FALSE)
+  }
   decoded <- if (is.character(value)) jsonlite::fromJSON(value, simplifyVector = FALSE) else value
   graph <- normalize_workflow_graph(decoded$graph)
   interrupted <- c("pending", "queued", "running", "cancelling")

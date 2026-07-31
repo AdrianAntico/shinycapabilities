@@ -1,16 +1,24 @@
 registry_payload <- function(registry) {
   lapply(capability_registry_list(registry), function(capability) {
     presentation <- capability_presentation(capability)
+    label_ports <- function(ports, labels) {
+      if (!length(ports)) return(ports)
+      Map(function(port, name) {
+        port$displayLabel <- labels[[name]] %||% gsub("_", " ", name, fixed = TRUE)
+        port
+      }, ports, names(ports))
+    }
     list(
       id = capability$id,
       version = capability$version,
       displayName = capability$display_name,
       description = capability$description,
       category = capability$category,
-      inputs = capability$inputs,
-      outputs = capability$outputs,
+      inputs = label_ports(capability$inputs, presentation$input_port_labels),
+      outputs = label_ports(capability$outputs, presentation$output_port_labels),
       config = capability$config,
       icon = presentation$icon,
+      presentation = presentation,
       style = capability$style
     )
   })
@@ -33,7 +41,10 @@ capability_canvas <- function(
     x = list(
       capabilities = registry_payload(registry),
       graph = normalize_workflow_graph(graph),
-      options = list(readOnly = isTRUE(read_only), minimap = isTRUE(minimap))
+      options = list(
+        readOnly = isTRUE(read_only), minimap = isTRUE(minimap),
+        bridgeVersion = "1.0.0"
+      )
     ),
     width = width,
     height = height,
