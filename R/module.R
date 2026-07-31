@@ -2,10 +2,10 @@ capability_presentation <- function(capability) {
   supplied <- isTRUE(attr(capability$presentation, "host_supplied"))
   metadata <- capability$presentation %||% normalize_capability_presentation()
   group_label <- if (supplied) metadata$group_label else capability$category %||% "Other"
-  icon <- if (supplied) metadata$icon_id %||% "\u25c7" else capability$icon %||% "\u25c7"
+  icon <- normalize_shinycapabilities_icon(if (supplied) metadata$icon_id else capability$icon)
   list(
     icon = icon,
-    icon_id = metadata$icon_id,
+    icon_id = icon,
     label = capability$display_name,
     category = group_label,
     group_id = if (supplied) metadata$group_id else "other",
@@ -101,7 +101,7 @@ palette_ui <- function(namespace, registry) {
             `data-shinycap-emphasis` = item$accent,
             title = item$description,
             `aria-label` = paste("Insert", item$accessibility_label),
-            htmltools::tags$span(class = "sc-palette-icon", `aria-hidden` = "true", item$icon),
+            shinycapabilities_icon_tag(item$icon_id, "sc-palette-icon"),
             htmltools::tags$strong(item$label)
           )
         })

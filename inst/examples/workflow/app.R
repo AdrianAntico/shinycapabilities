@@ -22,7 +22,8 @@ add_step <- function(id, label, description, order, optional_input = FALSE) {
     implementation_fingerprint = paste0("optional-order-example-", id, "-1"),
     presentation = list(
       group_id = "order-flow", group_label = "Order flow", group_order = 10,
-      display_order = order, icon_id = c("□", "✓", "→", "◇")[[order / 10]],
+      display_order = order,
+      icon_id = c("file", "check", "send", "saved")[[order / 10]],
       short_summary = description, compact_summary = label,
       input_port_labels = list(item = "Work item"),
       output_port_labels = list(item = "Work item"),

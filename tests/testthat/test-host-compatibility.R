@@ -48,7 +48,7 @@ testthat::test_that("neutral presentation uses only registered vocabulary", {
   ))
   payload <- shinycapabilities:::registry_payload(registry)[[1]]
   testthat::expect_identical(payload$presentation$category, "Host group")
-  testthat::expect_identical(payload$presentation$icon, "\u25c7")
+  testthat::expect_identical(payload$presentation$icon, "asterisk")
   testthat::expect_identical(payload$inputs$source_value$displayLabel, "source value")
 })
 

@@ -34,6 +34,13 @@ The package performs no semantic inference from capability IDs, labels,
 categories, ports, or descriptions. Hosts must supply presentation metadata
 explicitly whenever the neutral fallback is insufficient.
 
+`icon_id` is resolved only through `shinycapabilities_icon_allowlist()`. The
+generic package renders the locally available Bootstrap 3 Glyphicon font,
+licensed under the MIT license as distributed with Shiny's Bootstrap assets.
+Unknown identifiers and markup-like input resolve to the neutral `asterisk`
+fallback; arbitrary SVG, HTML, URLs, and user-provided classes are never
+rendered. Domain-specific icon assignments remain host-owned.
+
 ## Stable browser hooks
 
 Hosts should prefer `data-shinycap-*` attributes and documented

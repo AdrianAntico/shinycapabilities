@@ -26,6 +26,21 @@ const CAPABILITY_MIME = "application/vnd.shinycapabilities.capability+json;versi
 const LEGACY_CAPABILITY_MIME = "application/x-shinycapability";
 const friendlyPort = (name, port) =>
   port?.displayLabel || String(name).replaceAll("_", " ");
+const ALLOWED_ICONS = new Set([
+  "adjust", "asterisk", "ban-circle", "barcode", "bell", "book", "bookmark", "briefcase",
+  "bullhorn", "calendar", "camera", "certificate", "check", "cloud", "cog", "comment",
+  "dashboard", "edit", "eye-open", "file", "filter", "fire", "flag", "flash", "folder-open",
+  "globe", "hdd", "heart", "inbox", "leaf", "link", "list-alt", "lock", "magnet",
+  "map-marker", "move", "ok-circle", "paperclip", "picture", "pushpin", "qrcode", "random",
+  "refresh", "repeat", "road", "saved", "search", "send", "signal", "sort", "stats", "tag",
+  "tasks", "th", "th-large", "th-list", "time", "tower", "transfer", "tree-deciduous",
+  "tree-conifer", "user", "warning-sign", "wrench", "zoom-in"
+]);
+const safeIcon = (value) => ALLOWED_ICONS.has(value) ? value : "asterisk";
+const CapabilityIcon = ({ value, className = "" }) => {
+  const icon = safeIcon(value);
+  return <span className={`${className} glyphicon glyphicon-${icon}`} data-shinycap-icon={icon} aria-hidden="true" />;
+};
 
 function emit(element, type, payload, graph) {
   if (!window.Shiny?.setInputValue) return;
@@ -58,7 +73,7 @@ const CapabilityNode = memo(({ id, data, selected }) => (
       onResizeEnd={(_, dimensions) => data.onResizeEnd?.(id, dimensions)}
     />}
     <header>
-      <span className="sc-node-icon" aria-hidden="true">{data.icon || "◇"}</span>
+      <CapabilityIcon className="sc-node-icon" value={data.icon} />
       <div>
         <strong>{data.displayName}</strong>
         <small>{data.category}</small>
