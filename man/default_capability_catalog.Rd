@@ -2,11 +2,11 @@
 % Please edit documentation in R/catalog.R
 \name{default_capability_catalog}
 \alias{default_capability_catalog}
-\title{Create a neutral document-workflow example catalog}
+\title{Create an empty host-neutral capability catalog}
 \usage{
 default_capability_catalog()
 }
 \description{
-The default catalog demonstrates generic typed workflow composition. Hosts
-must register all domain vocabulary and behavior themselves.
+Domain capabilities belong to host applications or optional examples. The
+package does not install an authoritative domain catalog.
 }

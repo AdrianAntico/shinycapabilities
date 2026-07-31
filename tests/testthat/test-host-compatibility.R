@@ -7,7 +7,7 @@ testthat::test_that("compatibility manifest closes the additive contract", {
 })
 
 testthat::test_that("module return fields remain additive and controls are versioned", {
-  registry <- example_document_catalog()
+  registry <- default_capability_catalog()
   shiny::testServer(
     capability_canvas_server,
     args = list(
@@ -134,66 +134,9 @@ testthat::test_that("workflow schema validation preserves 1.0.0 bytes", {
   )
 })
 
-testthat::test_that("neutral document example covers the generic execution path", {
-  registry <- example_document_catalog()
-  ids <- vapply(capability_registry_list(registry), `[[`, character(1), "id")
-  testthat::expect_identical(ids, sort(c(
-    "document.intake", "document.cleanup", "document.approval", "document.publish"
-  )))
-  testthat::expect_false(any(grepl("host[.]|private[.]", ids, ignore.case = TRUE)))
-
-  graph <- list(
-    nodes = list(
-      list(id = "intake", capability_id = "document.intake", state = "ready",
-        config = list(label = "Intake")),
-      list(id = "cleanup", capability_id = "document.cleanup", state = "ready",
-        config = list(label = "Cleanup")),
-      list(id = "approval", capability_id = "document.approval", state = "ready",
-        config = list(label = "Approval")),
-      list(id = "publish", capability_id = "document.publish", state = "ready",
-        config = list(label = "Publication"))
-    ),
-    edges = list(
-      list(id = "a", source = "intake", source_port = "document",
-        target = "cleanup", target_port = "document"),
-      list(id = "b", source = "cleanup", source_port = "document",
-        target = "approval", target_port = "document"),
-      list(id = "c", source = "approval", source_port = "approved",
-        target = "publish", target_port = "approved")
-    )
-  )
-  plan <- plan_workflow(registry, graph)
-  testthat::expect_true(plan$valid)
-  first <- execute_workflow_plan(
-    registry, graph, plan, context = list(text = "  Draft text  ")
-  )
-  testthat::expect_identical(
-    first$results$publish$outputs$artifact$document$text, "Draft text"
-  )
-  cached <- plan_workflow(registry, graph, cache = first$results)
-  testthat::expect_true(all(vapply(
-    cached$steps, function(step) step$action == "skipped/current", logical(1)
-  )))
-
-  proposal <- workflow_proposal(
-    "document-proposal", graph,
-    explanations = list(cleanup = "Normalize document whitespace."),
-    recommended_execution_order = plan$order
-  )
-  accepted <- accept_workflow_proposal(proposal)
-  testthat::expect_identical(length(accepted$nodes), 4L)
-
-  document <- workflow_document(
-    accepted, list(output_placement("publication:example"))
-  )
-  serialized <- serialize_workflow_document(document)
-  restored <- restore_workflow_document(serialized)
-  testthat::expect_identical(
-    serialize_workflow_document(restored), serialized
-  )
-  testthat::expect_identical(
-    restored$output_placements[[1]]$artifact_id, "publication:example"
-  )
+testthat::test_that("the default catalog has no package-owned domain vocabulary", {
+  registry <- default_capability_catalog()
+  testthat::expect_length(capability_registry_list(registry), 0L)
 })
 
 testthat::test_that("versioned and legacy browser bridge aliases are bundled", {
@@ -259,4 +202,13 @@ testthat::test_that("configuration selectors are neutral host primitives", {
   for (retired in c("dataset", "column", "formula")) {
     testthat::expect_error(config_field(retired, "Retired"), "Unsupported")
   }
+})
+
+testthat::test_that("Shiny owns the rendered canvas output identity", {
+  module_source <- paste(deparse(body(capability_canvas_server)), collapse = "\n")
+  testthat::expect_false(grepl(
+    "capability_canvas(registry, graph(), element_id = session$ns(\"canvas\"))",
+    module_source,
+    fixed = TRUE
+  ))
 })

@@ -6,14 +6,14 @@ test_that("registry stores closed capability definitions", {
     execute = function(context, config, inputs) list(value = 1)
   ))
   expect_equal(capability_registry_get(registry, "source.value")$version, "1.0.0")
+  expect_identical(
+    vapply(capability_registry_list(registry), `[[`, character(1), "id"),
+    "source.value"
+  )
   expect_length(capability_registry_list(registry), 1)
 })
 
-test_that("default catalog is the neutral document example", {
+test_that("default catalog is host neutral and empty", {
   registry <- default_capability_catalog()
-  expect_length(capability_registry_list(registry), 4)
-  expect_true(all(c(
-    "document.intake", "document.cleanup", "document.approval", "document.publish"
-  ) %in%
-    vapply(capability_registry_list(registry), `[[`, character(1), "id")))
+  expect_length(capability_registry_list(registry), 0)
 })

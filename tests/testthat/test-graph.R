@@ -33,3 +33,29 @@ test_that("connection validation enforces port types", {
   expect_false(result$valid)
   expect_equal(result$code, "type_mismatch")
 })
+
+test_that("connections fail closed for duplicate, occupied input, cycle, and self", {
+  registry <- capability_registry()
+  for (id in c("one", "two", "three")) {
+    capability_registry_add(registry, register_capability(
+      paste0("step.", id), "1.0.0", id,
+      inputs = list(item = port_type("work_item", required = FALSE)),
+      outputs = list(item = port_type("work_item"))
+    ))
+  }
+  graph <- list(
+    nodes = lapply(c("one", "two", "three"), function(id) list(
+      id = id, capability_id = paste0("step.", id)
+    )),
+    edges = list(list(id = "one_two", source = "one", source_port = "item",
+      target = "two", target_port = "item"))
+  )
+  propose <- function(source, target) validate_connection(registry, graph, list(
+    source = source, source_port = "item", target = target, target_port = "item"
+  ))
+  expect_identical(propose("one", "two")$code, "duplicate_connection")
+  expect_identical(propose("three", "two")$code, "input_occupied")
+  expect_identical(propose("two", "one")$code, "cycle")
+  expect_identical(propose("one", "one")$code, "self_connection")
+  expect_true(propose("two", "three")$valid)
+})

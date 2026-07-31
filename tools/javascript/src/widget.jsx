@@ -51,7 +51,12 @@ const CapabilityNode = memo(({ id, data, selected }) => (
     data-shinycap-selected={selected ? "true" : "false"}
     aria-label={`${data.displayName}, ${data.state || "unconfigured"}`}
   >
-    {!data.readOnly && <NodeResizer minWidth={220} minHeight={110} isVisible={selected} />}
+    {!data.readOnly && <NodeResizer
+      minWidth={240}
+      minHeight={150}
+      isVisible={selected}
+      onResizeEnd={(_, dimensions) => data.onResizeEnd?.(id, dimensions)}
+    />}
     <header>
       <span className="sc-node-icon" aria-hidden="true">{data.icon || "◇"}</span>
       <div>
@@ -70,6 +75,10 @@ const CapabilityNode = memo(({ id, data, selected }) => (
             id={name}
             style={{ top: 82 + index * 22 }}
             aria-label={`Input ${name}, ${port.type}`}
+            title={`Connect ${port.type} to ${friendlyPort(name, port)}`}
+            className={data.connectionSource ?
+              (data.connectionSource.nodeId !== id && data.connectionSource.type === port.type
+                ? "sc-handle-compatible" : "sc-handle-incompatible") : ""}
           />
           <span>{friendlyPort(name, port)}</span><code>{port.type}</code>
         </div>
@@ -85,6 +94,7 @@ const CapabilityNode = memo(({ id, data, selected }) => (
             id={name}
             style={{ top: 82 + index * 22 }}
             aria-label={`Output ${name}, ${port.type}`}
+            title={`${friendlyPort(name, port)} output: ${port.type}`}
           />
         </div>
       ))}
@@ -107,8 +117,8 @@ function serialize(nodes, edges) {
         capability_id: node.data.capabilityId,
         position: node.position,
         size: {
-          width: node.measured?.width || node.width || 260,
-          height: node.measured?.height || node.height || 138
+          width: Math.max(240, node.width || node.measured?.width || 260),
+          height: Math.max(150, node.height || node.measured?.height || 150)
         },
         config: node.data.config || {},
         state: node.data.state || "unconfigured",
@@ -151,8 +161,8 @@ function hydrate(graph, capabilities, readOnly) {
         id: node.id,
         type: "capability",
         position: node.position || { x: 0, y: 0 },
-        width: node.size?.width || 260,
-        height: node.size?.height || 138,
+        width: Math.max(240, node.size?.width || 260),
+        height: Math.max(150, node.size?.height || 150),
         parentId: node.parent_id || undefined,
         data: {
           capabilityId: node.capability_id,
@@ -190,6 +200,8 @@ function Canvas({ element, value }) {
   const [nodes, setNodes] = useState(hydrated.nodes);
   const [edges, setEdges] = useState(hydrated.edges);
   const [pendingConnection, setPendingConnection] = useState(null);
+  const [connectionSource, setConnectionSource] = useState(null);
+  const [connectionFeedback, setConnectionFeedback] = useState(null);
   const wrapper = useRef(null);
   const flow = useReactFlow();
   const catalog = useMemo(() => byId(value.capabilities || []), [value.capabilities]);
@@ -270,11 +282,13 @@ function Canvas({ element, value }) {
           emit(element, "connection_accepted", { edge: pendingConnection }, serialize(nodes, next));
           return next;
         });
+        setConnectionFeedback({ valid: true, message: message.result.message });
       } else {
         emit(element, "connection_rejected", {
           edge: pendingConnection,
           finding: message.result
         }, graph());
+        setConnectionFeedback({ valid: false, message: message.result?.message || "Connection rejected." });
       }
       setPendingConnection(null);
     };
@@ -303,8 +317,38 @@ function Canvas({ element, value }) {
       id: `${connection.source}__${connection.sourceHandle}__${connection.target}__${connection.targetHandle}`
     };
     setPendingConnection(edge);
+    setConnectionFeedback({ valid: null, message: "Checking connection with the R workflow authority…" });
     emit(element, "connection_proposed", { edge }, graph());
   }, [element, graph, readOnly]);
+
+  const onConnectStart = useCallback((_, params) => {
+    if (params.handleType !== "source") return;
+    const node = nodes.find((candidate) => candidate.id === params.nodeId);
+    setConnectionSource({
+      nodeId: params.nodeId,
+      handleId: params.handleId,
+      type: node?.data?.outputs?.[params.handleId]?.type
+    });
+  }, [nodes]);
+
+  const onConnectEnd = useCallback(() => setConnectionSource(null), []);
+
+  const onNodeResizeEnd = useCallback((id, resized) => {
+    setNodes((current) => {
+      const next = current.map((node) => node.id === id ? {
+        ...node,
+        width: Math.max(240, resized.width || 240),
+        height: Math.max(150, resized.height || 150)
+      } : node);
+      emit(element, "resize_completed", { nodeId: id }, serialize(next, edges));
+      return next;
+    });
+  }, [edges, element]);
+
+  const presentedNodes = useMemo(() => nodes.map((node) => ({
+    ...node,
+    data: { ...node.data, connectionSource, onResizeEnd: onNodeResizeEnd }
+  })), [connectionSource, nodes, onNodeResizeEnd]);
 
   const onDrop = useCallback((event) => {
     event.preventDefault();
@@ -383,16 +427,17 @@ function Canvas({ element, value }) {
       }}
     >
       <ReactFlow
-        nodes={nodes}
+        nodes={presentedNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         onNodeClick={(_, node) => emit(element, "node_selected", { nodeId: node.id }, graph())}
         onPaneClick={() => emit(element, "node_selected", { nodeId: null }, graph())}
         onNodeDragStop={(_, node) => emit(element, "move_completed", { nodeId: node.id }, graph())}
-        onNodeResizeEnd={(_, node) => emit(element, "resize_completed", { nodeId: node.id }, graph())}
         onNodesDelete={(deleted) => emit(element, "node_removed", {
           nodeIds: deleted.map((node) => node.id)
         }, graph(nodes.filter((node) => !deleted.some((item) => item.id === node.id)), edges))}
@@ -412,6 +457,13 @@ function Canvas({ element, value }) {
         <Controls showInteractive={!readOnly} />
         {value.options?.minimap && <MiniMap pannable zoomable />}
       </ReactFlow>
+      <div
+        className={`sc-connection-feedback${connectionFeedback ? " is-visible" : ""}${connectionFeedback?.valid === false ? " is-rejected" : ""}`}
+        role="status"
+        aria-live="polite"
+      >
+        {connectionFeedback?.message || "Drag from an output handle to a compatible input handle."}
+      </div>
     </div>
   );
 }

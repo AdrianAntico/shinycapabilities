@@ -31,7 +31,7 @@ normalize_capability_presentation <- function(value = list()) {
   }
   defaults <- list(
     group_id = "other", group_label = "Other", group_order = 1000,
-    display_order = 1000, icon_id = "generic", short_summary = NULL,
+    display_order = 1000, icon_id = NULL, short_summary = NULL,
     compact_summary = NULL, input_port_labels = list(),
     output_port_labels = list(), emphasis = "default",
     accessibility_label = NULL
@@ -176,5 +176,5 @@ capability_registry_get <- function(registry, id) {
 #' @export
 capability_registry_list <- function(registry) {
   ids <- sort(ls(registry, all.names = TRUE))
-  unname(lapply(ids, capability_registry_get, registry = registry))
+  unname(lapply(ids, function(id) capability_registry_get(registry, id)))
 }

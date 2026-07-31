@@ -70,6 +70,16 @@ validate_connection <- function(registry, graph, edge) {
   if (identical(source$id, target$id)) {
     return(list(valid = FALSE, code = "self_connection", message = "A node cannot connect to itself."))
   }
+  exact <- Filter(function(candidate) {
+    identical(candidate$source, edge$source) &&
+      identical(candidate$source_port, edge$source_port %||% edge$sourceHandle) &&
+      identical(candidate$target, edge$target) &&
+      identical(candidate$target_port, edge$target_port %||% edge$targetHandle)
+  }, graph$edges)
+  if (length(exact)) {
+    return(list(valid = FALSE, code = "duplicate_connection",
+      message = "That connection already exists."))
+  }
   source_cap <- capability_registry_get(registry, source$capability_id)
   target_cap <- capability_registry_get(registry, target$capability_id)
   output <- source_cap$outputs[[edge$source_port %||% edge$sourceHandle]]
@@ -83,6 +93,29 @@ validate_connection <- function(registry, graph, edge) {
       message = sprintf("Output %s is %s, but input %s requires %s.",
         edge$source_port, output$type, edge$target_port, input$type)
     ))
+  }
+  occupied <- Filter(function(candidate) {
+    identical(candidate$target, edge$target) &&
+      identical(candidate$target_port, edge$target_port %||% edge$targetHandle)
+  }, graph$edges)
+  if (length(occupied) && !isTRUE(input$multiple)) {
+    return(list(valid = FALSE, code = "input_occupied",
+      message = "That single input already has a connection."))
+  }
+  adjacency <- split(
+    vapply(graph$edges, `[[`, character(1), "target"),
+    vapply(graph$edges, `[[`, character(1), "source")
+  )
+  reaches <- function(current, sought, visited = character()) {
+    if (identical(current, sought)) return(TRUE)
+    if (current %in% visited) return(FALSE)
+    next_nodes <- adjacency[[current]] %||% character()
+    any(vapply(next_nodes, reaches, logical(1), sought = sought,
+      visited = c(visited, current)))
+  }
+  if (reaches(edge$target, edge$source)) {
+    return(list(valid = FALSE, code = "cycle",
+      message = "That connection would create a cycle."))
   }
   list(valid = TRUE, code = "accepted", message = "Typed connection accepted.")
 }
@@ -98,8 +131,11 @@ validate_workflow <- function(registry, graph) {
   if (anyDuplicated(ids)) {
     findings <- append(findings, list(list(code = "duplicate_node", severity = "error")))
   }
-  for (edge in graph$edges) {
-    result <- validate_connection(registry, graph, edge)
+  for (index in seq_along(graph$edges)) {
+    edge <- graph$edges[[index]]
+    validation_graph <- graph
+    validation_graph$edges <- graph$edges[-index]
+    result <- validate_connection(registry, validation_graph, edge)
     if (!isTRUE(result$valid)) findings <- append(findings, list(result))
   }
   for (node in graph$nodes) {

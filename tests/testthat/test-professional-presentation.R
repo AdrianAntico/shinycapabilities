@@ -17,3 +17,13 @@ testthat::test_that("embedded canvas UI is bounded and capability identities are
   testthat::expect_true(grepl("Resize configuration inspector", html, fixed = TRUE))
   testthat::expect_true(grepl("height:100%", html, fixed = TRUE))
 })
+
+testthat::test_that("optional examples can use one clear palette presentation", {
+  registry <- capability_registry()
+  capability_registry_add(registry, register_capability("step.one", "1.0.0", "One"))
+  html <- as.character(capability_canvas_ui(
+    "example", registry, toolbar = FALSE, palette_density_controls = FALSE
+  ))
+  testthat::expect_false(grepl("data-palette-density=", html, fixed = TRUE))
+  testthat::expect_true(grepl("data-shinycap-density=\"comfortable\"", html, fixed = TRUE))
+})

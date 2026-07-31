@@ -48,13 +48,36 @@ pak::pkg_install("path/to/shinycapabilities")
 Installed users do not need Node.js. Production JavaScript and CSS are bundled
 in the R package.
 
-## Minimal Shiny application
+## Standalone example
+
+The installed package includes an optional, independent light-theme order-flow
+example. It is deliberately separate from package core and demonstrates four
+host-registered capabilities connected by the neutral `work_item` port type:
+Receive order, Check inventory, Approve packing, and Dispatch shipment.
+
+```r
+shinycapabilities::run_capability_demo()
+```
+
+Drag from the right output handle of one card to the left input handle of the
+next. Compatible inputs highlight while dragging. R validates type compatibility,
+duplicates, input cardinality, self-connections, and cycles before the browser
+adds an edge. Focus a palette item and press Enter for keyboard insertion.
+
+![Standalone order workflow example](docs/standalone-order-workflow.png)
+
+## Minimal host application
 
 ```r
 library(shiny)
 library(shinycapabilities)
 
-registry <- default_capability_catalog()
+registry <- capability_registry()
+capability_registry_add(registry, register_capability(
+  "example.step", "1.0.0", "Example step",
+  outputs = list(item = port_type("work_item")),
+  execute = function(context, config, inputs) list(item = context$item)
+))
 
 ui <- fluidPage(
   capability_canvas_ui("workflow", registry, height = "680px")
@@ -67,11 +90,8 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 ```
 
-Run the installed demonstration with:
-
-```r
-shinycapabilities::run_capability_demo()
-```
+`default_capability_catalog()` is intentionally empty: package core does not
+claim ownership of any domain catalog.
 
 ## Register a host capability
 
@@ -79,19 +99,19 @@ shinycapabilities::run_capability_demo()
 formatter <- register_capability(
   id = "example.format",
   version = "1.0.0",
-  display_name = "Format document",
-  description = "Create a bounded publication artifact.",
-  category = "Publish",
-  inputs = list(document = port_type("document")),
-  outputs = list(artifact = port_type("publication_artifact")),
+  display_name = "Process item",
+  description = "Create a bounded host-owned result.",
+  category = "Host steps",
+  inputs = list(item = port_type("work_item")),
+  outputs = list(item = port_type("work_item")),
   config = list(
     style = config_field("select", "Style", "plain", c("plain", "formal"))
   ),
   validate = function(context, config, inputs) {
-    list(valid = !is.null(inputs$document))
+    list(valid = !is.null(inputs$item))
   },
   execute = function(context, config, inputs) {
-    list(artifact = list(document = inputs$document, style = config$style))
+    list(item = utils::modifyList(inputs$item, list(style = config$style)))
   },
   implementation_fingerprint = "example-format-v1"
 )
@@ -102,6 +122,25 @@ capability_registry_add(registry, formatter)
 
 Hosts may provide custom Shiny configuration UI/server hooks. Typed connection
 acceptance remains R-owned.
+
+## Host styling
+
+The widget exposes documented neutral CSS custom properties rather than a host
+theme. Scope overrides to the host shell so multiple studios can coexist:
+
+```css
+.my-workflow-shell {
+  --shinycap-color-background: #f7f9fc;
+  --shinycap-color-panel: #ffffff;
+  --shinycap-color-text: #172033;
+  --shinycap-color-selection: #1769aa;
+  --shinycap-palette-width: 220px;
+  --shinycap-inspector-width: 300px;
+}
+```
+
+The optional example uses only these hooks. It does not load styling or
+vocabulary from a host application.
 
 ## Execution and cancellation
 

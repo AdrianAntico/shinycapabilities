@@ -2,7 +2,7 @@ capability_presentation <- function(capability) {
   supplied <- isTRUE(attr(capability$presentation, "host_supplied"))
   metadata <- capability$presentation %||% normalize_capability_presentation()
   group_label <- if (supplied) metadata$group_label else capability$category %||% "Other"
-  icon <- if (supplied) metadata$icon_id else capability$icon %||% "\u25c7"
+  icon <- if (supplied) metadata$icon_id %||% "\u25c7" else capability$icon %||% "\u25c7"
   list(
     icon = icon,
     icon_id = metadata$icon_id,
@@ -75,6 +75,10 @@ palette_ui <- function(namespace, registry) {
   presentations <- lapply(capabilities, capability_presentation)
   categories <- split(seq_along(capabilities),
     vapply(presentations, `[[`, character(1), "category"))
+  categories <- lapply(categories, function(indexes) indexes[order(
+    vapply(presentations[indexes], `[[`, numeric(1), "display_order"),
+    vapply(presentations[indexes], `[[`, character(1), "label")
+  )])
   shiny::tagList(lapply(sort(names(categories)), function(category) {
     htmltools::tags$details(
       class = "sc-palette-category",
@@ -138,8 +142,10 @@ config_control <- function(namespace, name, definition, value = NULL) {
 #' @param registry Capability registry.
 #' @param height Canvas height.
 #' @param toolbar Display the package execution toolbar. Hosts may provide their own.
+#' @param palette_density_controls Display the public palette density controls.
 #' @export
-capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE) {
+capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE,
+                                 palette_density_controls = TRUE) {
   ns <- shiny::NS(id)
   htmltools::tagList(
     htmltools::tags$script(htmltools::HTML(
@@ -148,12 +154,12 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE)
     htmltools::tags$div(
       class = "sc-workbench",
       `data-shinycap-part` = "workbench",
-      `data-shinycap-density` = "compact",
+      `data-shinycap-density` = if (isTRUE(palette_density_controls)) "compact" else "comfortable",
       htmltools::tags$aside(class = "sc-palette", `data-shinycap-part` = "palette",
         `data-shinycap-panel` = "palette",
         htmltools::tags$div(class = "sc-pane-heading",
           htmltools::tags$span("Capabilities"),
-          htmltools::tags$div(class = "sc-palette-density", role = "group",
+          if (isTRUE(palette_density_controls)) htmltools::tags$div(class = "sc-palette-density", role = "group",
             `aria-label` = "Palette density",
             htmltools::tags$button(type = "button", `data-palette-density` = "comfortable",
               title = "Comfortable palette", `aria-label` = "Comfortable palette", "\u2630"),
@@ -208,8 +214,8 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE)
       )
     ),
     htmltools::tags$script(htmltools::HTML(sprintf(
-      "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"],.sc-workbench');if(!root)return;const search=root.querySelector('.sc-palette-search');const key='shinycapabilities.paletteDensity';const setDensity=function(value){root.dataset.paletteDensity=value;root.dataset.shinycapDensity=value;sessionStorage.setItem(key,value);root.querySelectorAll('[data-palette-density]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.paletteDensity===value));});};setDensity(sessionStorage.getItem(key)||'compact');const insert=function(item){const canvas=document.getElementById(item.dataset.canvasId);if(!canvas)return;const rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new CustomEvent('shinycapabilities:v1:insert',{bubbles:true,detail:{bridgeVersion:'1.0.0',capabilityId:item.dataset.capabilityId,x:rect.width/2,y:rect.height/2}}));};search?.addEventListener('input',function(){const term=this.value.trim().toLowerCase();root.querySelectorAll('.sc-palette-item').forEach(function(item){item.hidden=term&&!item.dataset.search.includes(term);});root.querySelectorAll('.sc-palette-category').forEach(function(group){const match=!!group.querySelector('.sc-palette-item:not([hidden])');group.hidden=!match;if(term&&match)group.open=true;});});root.addEventListener('click',function(e){const density=e.target.closest('[data-palette-density]');if(density)setDensity(density.dataset.paletteDensity);});root.addEventListener('keydown',function(e){const item=e.target.closest('.sc-palette-item');if(item&&e.key==='Enter'){e.preventDefault();insert(item);}});})();",
-      ns("palette_search")
+      "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"],.sc-workbench');if(!root)return;const search=root.querySelector('.sc-palette-search');const enabled=%s;const key='shinycapabilities.paletteDensity';const setDensity=function(value){root.dataset.paletteDensity=value;root.dataset.shinycapDensity=value;if(enabled)sessionStorage.setItem(key,value);root.querySelectorAll('[data-palette-density]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.paletteDensity===value));});};setDensity(enabled?(sessionStorage.getItem(key)||'compact'):'comfortable');const insert=function(item){const canvas=document.getElementById(item.dataset.canvasId);if(!canvas)return;const rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new CustomEvent('shinycapabilities:v1:insert',{bubbles:true,detail:{bridgeVersion:'1.0.0',capabilityId:item.dataset.capabilityId,x:rect.width/2,y:rect.height/2}}));};search?.addEventListener('input',function(){const term=this.value.trim().toLowerCase();root.querySelectorAll('.sc-palette-item').forEach(function(item){item.hidden=term&&!item.dataset.search.includes(term);});root.querySelectorAll('.sc-palette-category').forEach(function(group){const match=!!group.querySelector('.sc-palette-item:not([hidden])');group.hidden=!match;if(term&&match)group.open=true;});});root.addEventListener('click',function(e){const density=e.target.closest('[data-palette-density]');if(density)setDensity(density.dataset.paletteDensity);});root.addEventListener('keydown',function(e){const item=e.target.closest('.sc-palette-item');if(item&&e.key==='Enter'){e.preventDefault();insert(item);}});})();",
+      ns("palette_search"), if (isTRUE(palette_density_controls)) "true" else "false"
     )))
   )
 }
@@ -232,7 +238,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     runtime_snapshot <- shiny::reactiveVal(NULL)
 
     output$canvas <- render_capability_canvas({
-      capability_canvas(registry, graph(), element_id = session$ns("canvas"))
+      capability_canvas(registry, graph())
     })
 
     shiny::observeEvent(input$canvas_event, {

@@ -4,7 +4,13 @@
 \alias{capability_canvas_ui}
 \title{Capability workflow module UI}
 \usage{
-capability_canvas_ui(id, registry, height = "680px", toolbar = TRUE)
+capability_canvas_ui(
+  id,
+  registry,
+  height = "680px",
+  toolbar = TRUE,
+  palette_density_controls = TRUE
+)
 }
 \arguments{
 \item{id}{Module identifier.}
@@ -14,6 +20,8 @@ capability_canvas_ui(id, registry, height = "680px", toolbar = TRUE)
 \item{height}{Canvas height.}
 
 \item{toolbar}{Display the package execution toolbar. Hosts may provide their own.}
+
+\item{palette_density_controls}{Display the public palette density controls.}
 }
 \description{
 Capability workflow module UI
