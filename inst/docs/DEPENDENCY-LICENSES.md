@@ -1,4 +1,4 @@
-# Dependency licenses
+# Dependency Licenses
 
 Inventory generated from `tools/javascript/package-lock.json` for the build that
 produced the bundled assets.
