@@ -1,4 +1,4 @@
-testthat::test_that("optional example owns a closed connectable order fixture", {
+testthat::test_that("optional example owns a minimal neutral workflow", {
   example <- system.file("examples", "workflow", "app.R", package = "shinycapabilities")
   if (!nzchar(example)) {
     example <- testthat::test_path("..", "..", "inst", "examples", "workflow", "app.R")
@@ -6,13 +6,12 @@ testthat::test_that("optional example owns a closed connectable order fixture", 
   source <- paste(readLines(
     example, warn = FALSE, encoding = "UTF-8"
   ), collapse = "\n")
-  for (label in c(
-    "Receive order", "Check inventory", "Approve packing", "Dispatch shipment"
-  )) testthat::expect_match(source, label, fixed = TRUE)
+  for (label in c("Prepare item", "Review item")) {
+    testthat::expect_match(source, label, fixed = TRUE)
+  }
   testthat::expect_match(source, 'port_type("work_item"', fixed = TRUE)
-  testthat::expect_false(grepl("palette_density_controls = TRUE", source, fixed = TRUE))
-  testthat::expect_match(source, "Load connected example", fixed = TRUE)
-  testthat::expect_match(source, "Start blank", fixed = TRUE)
+  testthat::expect_match(source, "capability_canvas_server", fixed = TRUE)
+  testthat::expect_false(grepl("Order workflow|drawer", source, ignore.case = TRUE))
 })
 
 testthat::test_that("bundled widget exposes connection and resize quality contracts", {
