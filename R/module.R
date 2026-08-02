@@ -260,7 +260,9 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     selected_node <- shiny::reactive({
       id <- selected_id()
       if (is.null(id)) return(NULL)
-      Filter(function(node) identical(node$id, id), graph()$nodes)[[1]] %||% NULL
+      matches <- Filter(function(node) identical(node$id, id), graph()$nodes)
+      if (length(matches) == 0L) return(NULL)
+      matches[[1L]]
     })
 
     output$inspector <- shiny::renderUI({
@@ -549,7 +551,11 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         active_runtime(NULL)
       }
       runtime_snapshot(NULL)
-      graph(normalize_workflow_graph(value))
+      normalized <- normalize_workflow_graph(value)
+      selected <- selected_id()
+      node_ids <- vapply(normalized$nodes, `[[`, character(1), "id")
+      if (!is.null(selected) && !selected %in% node_ids) selected_id(NULL)
+      graph(normalized)
       session$sendCustomMessage("shinycapabilities:set-graph",
         list(id = session$ns("canvas"), graph = graph()))
       session$sendCustomMessage("shinycapabilities:v1:set-graph",

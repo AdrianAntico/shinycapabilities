@@ -37,6 +37,39 @@ testthat::test_that("module return fields remain additive and controls are versi
   )
 })
 
+testthat::test_that("clearing a graph with a stale selection leaves an empty inspector", {
+  registry <- default_capability_catalog()
+  node <- list(
+    id = "selected-source",
+    capability_id = "neutral.source",
+    position = list(x = 0, y = 0)
+  )
+  shiny::testServer(
+    capability_canvas_server,
+    args = list(
+      registry = registry,
+      initial_graph = list(nodes = list(node), edges = list()),
+      bind_internal_controls = FALSE
+    ),
+    {
+      session$setInputs(canvas_event = list(type = "canvas_ready"))
+      session$flushReact()
+      session$setInputs(canvas_event = list(
+        type = "node_selected",
+        nodeId = node$id
+      ))
+      session$flushReact()
+      testthat::expect_identical(session$returned$selection(), node$id)
+
+      session$returned$set_graph(list(nodes = list(), edges = list()))
+      session$flushReact()
+
+      testthat::expect_null(session$returned$selection())
+      testthat::expect_silent(output$inspector)
+    }
+  )
+})
+
 testthat::test_that("neutral presentation uses only registered vocabulary", {
   registry <- capability_registry()
   capability_registry_add(registry, register_capability(
