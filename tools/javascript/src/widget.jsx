@@ -77,15 +77,30 @@ const CapabilityNode = memo(({ id, data, selected }) => (
     data-shinycap-part="node"
     data-shinycap-state={data.state || "unconfigured"}
     data-shinycap-selected={selected ? "true" : "false"}
+    data-shinycap-node-id={id}
+    data-testid={`shinycap-node-card-${id}`}
     aria-label={`${data.displayName}, ${data.state || "unconfigured"}`}
   >
     {!data.readOnly && <NodeResizer
       minWidth={240}
       minHeight={150}
       isVisible={selected}
+      handleClassName="sc-node-resize-handle"
+      lineClassName="sc-node-resize-line"
       onResizeEnd={(_, dimensions) => data.onResizeEnd?.(id, dimensions)}
     />}
-    <header>
+    <header
+      className="sc-node-drag-handle"
+      data-shinycap-action="select-node"
+      data-shinycap-node-id={id}
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          data.onSelect?.(id);
+        }
+      }}
+    >
       <CapabilityIcon className="sc-node-icon" value={data.icon} />
       <div>
         <strong>{data.displayName}</strong>
@@ -102,6 +117,10 @@ const CapabilityNode = memo(({ id, data, selected }) => (
               type="target"
               position={Position.Left}
               id={name}
+              data-shinycap-handle="input"
+              data-shinycap-node-id={id}
+              data-shinycap-port-id={name}
+              data-testid={`shinycap-handle-input-${id}-${name}`}
               style={{ top: 82 + index * 22 }}
               aria-label={`Input ${name}, ${port.type}`}
               title={`Connect ${port.type} to ${friendlyPort(name, port)}`}
@@ -121,6 +140,10 @@ const CapabilityNode = memo(({ id, data, selected }) => (
               type="source"
               position={Position.Right}
               id={name}
+              data-shinycap-handle="output"
+              data-shinycap-node-id={id}
+              data-shinycap-port-id={name}
+              data-testid={`shinycap-handle-output-${id}-${name}`}
               style={{ top: 82 + index * 22 }}
               aria-label={`Output ${name}, ${port.type}`}
               title={`${friendlyPort(name, port)} output: ${port.type}`}
@@ -216,6 +239,8 @@ function hydrate(graph, capabilities, readOnly) {
       sourceHandle: edge.source_port,
       target: edge.target,
       targetHandle: edge.target_port,
+      ariaLabel: `Connection ${edge.id}: ${edge.source} ${edge.source_port} to ${edge.target} ${edge.target_port}`,
+      data: { shinycapEdgeId: edge.id, sourcePort: edge.source_port, targetPort: edge.target_port },
       type: "smoothstep"
     }))
   };
@@ -377,8 +402,13 @@ function Canvas({ element, value }) {
 
   const presentedNodes = useMemo(() => nodes.map((node) => ({
     ...node,
-    data: { ...node.data, connectionSource, onResizeEnd: onNodeResizeEnd }
-  })), [connectionSource, nodes, onNodeResizeEnd]);
+    data: {
+      ...node.data,
+      connectionSource,
+      onResizeEnd: onNodeResizeEnd,
+      onSelect: (nodeId) => emit(element, "node_selected", { nodeId }, graph())
+    }
+  })), [connectionSource, element, graph, nodes, onNodeResizeEnd]);
 
   const onDrop = useCallback((event) => {
     event.preventDefault();
@@ -472,9 +502,12 @@ function Canvas({ element, value }) {
           nodeIds: deleted.map((node) => node.id)
         }, graph(nodes.filter((node) => !deleted.some((item) => item.id === node.id)), edges))}
         nodesDraggable={!readOnly}
+        nodeDragHandle=".sc-node-drag-handle"
+        nodeDragThreshold={8}
         nodesConnectable={!readOnly}
+        edgesReconnectable={false}
         elementsSelectable
-        deleteKeyCode={readOnly ? null : ["Backspace", "Delete"]}
+        deleteKeyCode={null}
         multiSelectionKeyCode={["Control", "Meta", "Shift"]}
         selectionOnDrag
         panOnDrag={[1, 2]}

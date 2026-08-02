@@ -4,4 +4,3 @@ dependencies:
     src: htmlwidgets/lib
     script: shinycapabilities.js
     stylesheet: shinycapabilities.css
-

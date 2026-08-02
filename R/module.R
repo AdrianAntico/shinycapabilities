@@ -79,7 +79,13 @@ palette_ui <- function(namespace, registry) {
     vapply(presentations[indexes], `[[`, numeric(1), "display_order"),
     vapply(presentations[indexes], `[[`, character(1), "label")
   )])
-  shiny::tagList(lapply(sort(names(categories)), function(category) {
+  lifecycle_order <- c("Inputs", "Data Preparation", "Exploration")
+  category_names <- names(categories)
+  category_names <- c(
+    intersect(lifecycle_order, category_names),
+    sort(setdiff(category_names, lifecycle_order))
+  )
+  shiny::tagList(lapply(category_names, function(category) {
     htmltools::tags$details(
       class = "sc-palette-category",
       open = "open",
@@ -214,10 +220,6 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE,
       )
     ),
     htmltools::tags$script(htmltools::HTML(sprintf(
-      "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"]');if(!root||root.dataset.configDraftReady)return;root.dataset.configDraftReady='true';const publish=function(field,inspector,value,action){Shiny.setInputValue('%s',{nodeId:inspector.dataset.shinycapNodeId,name:field.dataset.shinycapConfigName,value:value,action:action||'change',atomic:true,nonce:Date.now()},{priority:'event'});};root.addEventListener('analytics-input-draft',function(e){const field=e.target.closest('[data-shinycap-config-name]');const inspector=e.target.closest('[data-shinycap-node-id]');if(field&&inspector)publish(field,inspector,e.detail?.value,e.detail?.action||'analytics-input');});root.addEventListener('change',function(e){const field=e.target.closest('[data-shinycap-config-name]');const inspector=e.target.closest('[data-shinycap-node-id]');if(!field||!inspector||field.querySelector('[data-shinycap-local-draft=\"true\"]'))return;const control=field.querySelector('select,input,textarea');if(!control)return;let value;if(control.type==='checkbox')value=control.checked;else if(control.multiple)value=Array.from(control.selectedOptions).map(o=>o.value);else value=control.value;publish(field,inspector,value,'change');});})();",
-      ns("inspector"), ns("config_draft_event")
-    ))),
-    htmltools::tags$script(htmltools::HTML(sprintf(
       "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"],.sc-workbench');if(!root)return;const search=root.querySelector('.sc-palette-search');const enabled=%s;const key='shinycapabilities.paletteDensity';const setDensity=function(value){root.dataset.paletteDensity=value;root.dataset.shinycapDensity=value;if(enabled)sessionStorage.setItem(key,value);root.querySelectorAll('[data-palette-density]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.paletteDensity===value));});};setDensity(enabled?(sessionStorage.getItem(key)||'compact'):'comfortable');const insert=function(item){const canvas=document.getElementById(item.dataset.canvasId);if(!canvas)return;const rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new CustomEvent('shinycapabilities:v1:insert',{bubbles:true,detail:{bridgeVersion:'1.0.0',capabilityId:item.dataset.capabilityId,x:rect.width/2,y:rect.height/2}}));};search?.addEventListener('input',function(){const term=this.value.trim().toLowerCase();root.querySelectorAll('.sc-palette-item').forEach(function(item){item.hidden=term&&!item.dataset.search.includes(term);});root.querySelectorAll('.sc-palette-category').forEach(function(group){const match=!!group.querySelector('.sc-palette-item:not([hidden])');group.hidden=!match;if(term&&match)group.open=true;});});root.addEventListener('click',function(e){const density=e.target.closest('[data-palette-density]');if(density)setDensity(density.dataset.paletteDensity);});root.addEventListener('keydown',function(e){const item=e.target.closest('.sc-palette-item');if(item&&e.key==='Enter'){e.preventDefault();insert(item);}});})();",
       ns("palette_search"), if (isTRUE(palette_density_controls)) "true" else "false"
     )))
@@ -273,15 +275,23 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       matches[[1L]]
     })
 
-    shiny::observeEvent(input$config_draft_event, {
-      event <- input$config_draft_event
-      if (is.null(event$nodeId) || is.null(event$name)) return()
-      drafts <- config_drafts()
-      node_draft <- drafts[[event$nodeId]] %||% list()
-      node_draft[[event$name]] <- event$value
-      drafts[[event$nodeId]] <- node_draft
-      config_drafts(drafts)
-    }, ignoreInit = TRUE)
+    shiny::observe({
+      node <- selected_node()
+      if (is.null(node)) return()
+      capability <- capability_registry_get(registry, node$capability_id)
+      values <- setNames(lapply(names(capability$config), function(name) {
+        input[[paste0("config__", name)]]
+      }), names(capability$config))
+      present <- !vapply(values, is.null, logical(1))
+      if (!any(present)) return()
+      shiny::isolate({
+        drafts <- config_drafts()
+        node_draft <- drafts[[node$id]] %||% list()
+        node_draft[names(values)[present]] <- values[present]
+        drafts[[node$id]] <- node_draft
+        config_drafts(drafts)
+      })
+    })
 
     output$inspector <- shiny::renderUI({
       inspector_revision()

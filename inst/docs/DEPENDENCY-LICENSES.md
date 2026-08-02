@@ -9,6 +9,11 @@ produced the bundled assets.
 |---|---:|---|
 | @xyflow/react | 12.11.2 | MIT |
 | @xyflow/system | 0.0.79 | MIT |
+| @tanstack/react-virtual | 3.13.12 | MIT |
+| @tanstack/virtual-core | 3.13.12 | MIT |
+| @floating-ui/dom | 1.8.0 | MIT |
+| @floating-ui/core | 1.8.0 | MIT |
+| @floating-ui/utils | 0.2.12 | MIT |
 | React | 19.2.8 | MIT |
 | React DOM | 19.2.8 | MIT |
 | Zustand | 4.5.7 | MIT |
