@@ -9,7 +9,8 @@ capability_canvas_server(
   registry,
   initial_graph = list(nodes = list(), edges = list()),
   context = list(),
-  bind_internal_controls = TRUE
+  bind_internal_controls = TRUE,
+  config_control_renderer = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ capability_canvas_server(
 \item{context}{Host execution context.}
 
 \item{bind_internal_controls}{Bind the legacy module input IDs to runtime commands.}
+
+\item{config_control_renderer}{Optional host renderer for a configuration field.}
 }
 \description{
 Capability workflow module server

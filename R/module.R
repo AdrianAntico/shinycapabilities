@@ -214,6 +214,10 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE,
       )
     ),
     htmltools::tags$script(htmltools::HTML(sprintf(
+      "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"]');if(!root||root.dataset.configDraftReady)return;root.dataset.configDraftReady='true';root.addEventListener('change',function(e){const field=e.target.closest('[data-shinycap-config-name]');const inspector=e.target.closest('[data-shinycap-node-id]');const control=field?.querySelector('select,input,textarea');if(!field||!inspector||!control)return;let value;if(control.type==='checkbox')value=control.checked;else if(control.multiple){const picker=control.closest('.workflow-schema-picker.is-ordered');if(picker?.dataset.schemaOrder){try{value=JSON.parse(picker.dataset.schemaOrder)}catch(error){value=Array.from(control.selectedOptions).map(o=>o.value)}}else value=Array.from(control.selectedOptions).map(o=>o.value);}else value=control.value;Shiny.setInputValue('%s',{nodeId:inspector.dataset.shinycapNodeId,name:field.dataset.shinycapConfigName,value:value,nonce:Date.now()},{priority:'event'});});})();",
+      ns("inspector"), ns("config_draft_event")
+    ))),
+    htmltools::tags$script(htmltools::HTML(sprintf(
       "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"],.sc-workbench');if(!root)return;const search=root.querySelector('.sc-palette-search');const enabled=%s;const key='shinycapabilities.paletteDensity';const setDensity=function(value){root.dataset.paletteDensity=value;root.dataset.shinycapDensity=value;if(enabled)sessionStorage.setItem(key,value);root.querySelectorAll('[data-palette-density]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.paletteDensity===value));});};setDensity(enabled?(sessionStorage.getItem(key)||'compact'):'comfortable');const insert=function(item){const canvas=document.getElementById(item.dataset.canvasId);if(!canvas)return;const rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new CustomEvent('shinycapabilities:v1:insert',{bubbles:true,detail:{bridgeVersion:'1.0.0',capabilityId:item.dataset.capabilityId,x:rect.width/2,y:rect.height/2}}));};search?.addEventListener('input',function(){const term=this.value.trim().toLowerCase();root.querySelectorAll('.sc-palette-item').forEach(function(item){item.hidden=term&&!item.dataset.search.includes(term);});root.querySelectorAll('.sc-palette-category').forEach(function(group){const match=!!group.querySelector('.sc-palette-item:not([hidden])');group.hidden=!match;if(term&&match)group.open=true;});});root.addEventListener('click',function(e){const density=e.target.closest('[data-palette-density]');if(density)setDensity(density.dataset.paletteDensity);});root.addEventListener('keydown',function(e){const item=e.target.closest('.sc-palette-item');if(item&&e.key==='Enter'){e.preventDefault();insert(item);}});})();",
       ns("palette_search"), if (isTRUE(palette_density_controls)) "true" else "false"
     )))
@@ -226,9 +230,11 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE,
 #' @param initial_graph Initial workflow graph.
 #' @param context Host execution context.
 #' @param bind_internal_controls Bind the legacy module input IDs to runtime commands.
+#' @param config_control_renderer Optional host renderer for a configuration field.
 #' @export
 capability_canvas_server <- function(id, registry, initial_graph = list(nodes = list(), edges = list()),
-                                     context = list(), bind_internal_controls = TRUE) {
+                                     context = list(), bind_internal_controls = TRUE,
+                                     config_control_renderer = NULL) {
   shiny::moduleServer(id, function(input, output, session) {
     graph <- shiny::reactiveVal(normalize_workflow_graph(initial_graph))
     cache <- shiny::reactiveVal(list())
@@ -236,6 +242,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     last_plan <- shiny::reactiveVal(NULL)
     active_runtime <- shiny::reactiveVal(NULL)
     runtime_snapshot <- shiny::reactiveVal(NULL)
+    config_drafts <- shiny::reactiveVal(list())
 
     output$canvas <- render_capability_canvas({
       capability_canvas(registry, graph())
@@ -265,6 +272,16 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       matches[[1L]]
     })
 
+    shiny::observeEvent(input$config_draft_event, {
+      event <- input$config_draft_event
+      if (is.null(event$nodeId) || is.null(event$name)) return()
+      drafts <- config_drafts()
+      node_draft <- drafts[[event$nodeId]] %||% list()
+      node_draft[[event$name]] <- event$value
+      drafts[[event$nodeId]] <- node_draft
+      config_drafts(drafts)
+    }, ignoreInit = TRUE)
+
     output$inspector <- shiny::renderUI({
       node <- selected_node()
       if (is.null(node)) return(htmltools::tags$div(class = "sc-empty",
@@ -283,6 +300,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         ))
       }
       capability <- capability_registry_get(registry, node$capability_id)
+      draft <- config_drafts()[[node$id]] %||% list()
       custom <- if (is.function(capability$custom_ui)) capability$custom_ui(session$ns, node) else NULL
       execution_error <- cache()[[node$id]]$error %||% NULL
       execution_error_message <- if (is.list(execution_error)) {
@@ -290,7 +308,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       } else {
         paste(execution_error %||% "Unknown failure", collapse = " ")
       }
-      htmltools::tagList(
+      htmltools::tags$div(`data-shinycap-node-id` = node$id,
         htmltools::tags$h2(capability$display_name),
         htmltools::tags$p(capability$description),
         htmltools::tags$dl(class = "sc-node-facts",
@@ -317,7 +335,13 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
           htmltools::tags$dt("Cancellation"), htmltools::tags$dd(if (capability$cancellation) "Supported" else "Not supported")
         ),
         lapply(names(capability$config), function(name) {
-          config_control(session$ns, name, capability$config[[name]], node$config[[name]])
+          definition <- capability$config[[name]]
+          value <- draft[[name]] %||% node$config[[name]]
+          control <- if (is.function(config_control_renderer)) {
+            config_control_renderer(session$ns, name, definition, value, node, capability)
+          } else NULL
+          if (is.null(control)) control <- config_control(session$ns, name, definition, value)
+          htmltools::tags$div(`data-shinycap-config-name` = name, control)
         }),
         custom,
         shiny::actionButton(session$ns("save_config"), "Apply configuration", class = "btn-primary"),
@@ -338,8 +362,9 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       node <- selected_node()
       if (is.null(node)) return()
       capability <- capability_registry_get(registry, node$capability_id)
+      draft <- config_drafts()[[node$id]] %||% list()
       config <- setNames(lapply(names(capability$config), function(name) {
-        input[[paste0("config__", name)]]
+        input[[paste0("config__", name)]] %||% draft[[name]] %||% node$config[[name]]
       }), names(capability$config))
       next_graph <- graph()
       next_graph$nodes <- lapply(next_graph$nodes, function(candidate) {
@@ -349,6 +374,9 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         candidate
       })
       graph(normalize_workflow_graph(next_graph))
+      drafts <- config_drafts()
+      drafts[[node$id]] <- NULL
+      config_drafts(drafts)
       session$sendCustomMessage("shinycapabilities:set-graph",
         list(id = session$ns("canvas"), graph = graph()))
       session$sendCustomMessage("shinycapabilities:v1:set-graph",
@@ -562,6 +590,10 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         list(bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = graph()))
       invisible(graph())
     }
+    set_config_drafts <- function(value) {
+      config_drafts(value %||% list())
+      invisible(config_drafts())
+    }
     controls <- list(
       contract_version = "1.0.0",
       run_selected = command_run_selected,
@@ -590,6 +622,8 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
            if (!is.null(runtime)) cancel_workflow_runtime(runtime)
          },
          set_graph = set_graph, set_cache = function(value) cache(value),
+         config_drafts = shiny::reactive(config_drafts()),
+         set_config_drafts = set_config_drafts,
          controls = controls, contract_version = "1.0.0")
   })
 }

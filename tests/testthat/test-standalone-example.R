@@ -33,6 +33,7 @@ testthat::test_that("bundled widget exposes connection and resize quality contra
   )) testthat::expect_match(javascript, value, fixed = TRUE)
   for (value in c(
     ".sc-node{", "display:flex", "width:100%", "height:100%",
+    ".sc-node-port-grid", "grid-template-columns:minmax(0,1fr)minmax(0,1fr)",
     ".sc-handle-compatible", ".sc-connection-feedback"
   )) testthat::expect_match(gsub("\\s+", "", css), gsub("\\s+", "", value), fixed = TRUE)
 })

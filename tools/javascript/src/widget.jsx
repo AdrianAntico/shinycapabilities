@@ -94,38 +94,40 @@ const CapabilityNode = memo(({ id, data, selected }) => (
       <span className="sc-node-state">{data.state || "unconfigured"}</span>
     </header>
     <p className="sc-node-summary">{data.summary || data.description?.split(/[.!?]/)[0]}</p>
-    <div className="sc-node-ports sc-node-inputs">
-      {Object.entries(data.inputs || {}).map(([name, port], index) => (
-        <div className="sc-port-row" key={`in-${name}`}>
-          <Handle
-            type="target"
-            position={Position.Left}
-            id={name}
-            style={{ top: 82 + index * 22 }}
-            aria-label={`Input ${name}, ${port.type}`}
-            title={`Connect ${port.type} to ${friendlyPort(name, port)}`}
-            className={data.connectionSource ?
-              (data.connectionSource.nodeId !== id && data.connectionSource.type === port.type
-                ? "sc-handle-compatible" : "sc-handle-incompatible") : ""}
-          />
-          <span>{friendlyPort(name, port)}</span><code>{port.type}</code>
-        </div>
-      ))}
-    </div>
-    <div className="sc-node-ports sc-node-outputs">
-      {Object.entries(data.outputs || {}).map(([name, port], index) => (
-        <div className="sc-port-row" key={`out-${name}`}>
-          <span>{friendlyPort(name, port)}</span><code>{port.type}</code>
-          <Handle
-            type="source"
-            position={Position.Right}
-            id={name}
-            style={{ top: 82 + index * 22 }}
-            aria-label={`Output ${name}, ${port.type}`}
-            title={`${friendlyPort(name, port)} output: ${port.type}`}
-          />
-        </div>
-      ))}
+    <div className="sc-node-port-grid">
+      <div className="sc-node-ports sc-node-inputs">
+        {Object.entries(data.inputs || {}).map(([name, port], index) => (
+          <div className="sc-port-row" key={`in-${name}`}>
+            <Handle
+              type="target"
+              position={Position.Left}
+              id={name}
+              style={{ top: 82 + index * 22 }}
+              aria-label={`Input ${name}, ${port.type}`}
+              title={`Connect ${port.type} to ${friendlyPort(name, port)}`}
+              className={data.connectionSource ?
+                (data.connectionSource.nodeId !== id && data.connectionSource.type === port.type
+                  ? "sc-handle-compatible" : "sc-handle-incompatible") : ""}
+            />
+            <span>{friendlyPort(name, port)}</span><code>{port.type}</code>
+          </div>
+        ))}
+      </div>
+      <div className="sc-node-ports sc-node-outputs">
+        {Object.entries(data.outputs || {}).map(([name, port], index) => (
+          <div className="sc-port-row" key={`out-${name}`}>
+            <span>{friendlyPort(name, port)}</span><code>{port.type}</code>
+            <Handle
+              type="source"
+              position={Position.Right}
+              id={name}
+              style={{ top: 82 + index * 22 }}
+              aria-label={`Output ${name}, ${port.type}`}
+              title={`${friendlyPort(name, port)} output: ${port.type}`}
+            />
+          </div>
+        ))}
+      </div>
     </div>
     <footer aria-label={`Status ${data.state || "unconfigured"}`}>
       {data.metadata?.cache_status ? `Cache: ${data.metadata.cache_status}` : "Ready for inspection"}

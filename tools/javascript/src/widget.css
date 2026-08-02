@@ -58,7 +58,7 @@
   border: 1px solid var(--sc-border);
   border-radius: var(--shinycap-node-radius);
   box-shadow: 0 12px 28px #0006;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .sc-node-proposed {
@@ -79,10 +79,12 @@
   padding: 10px 12px;
   border-bottom: 1px solid var(--sc-border);
 }
-.sc-node header div { display: grid; }
+.sc-node header div { display: grid; min-width: 0; }
+.sc-node header strong, .sc-node header small, .sc-node-summary,
+.sc-node footer, .sc-port-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-node header small, .sc-node p, .sc-node footer { color: var(--sc-muted); }
-.sc-node p { flex: 1 1 auto; margin: 7px 12px; font-size: 11px; line-height: 1.25; overflow: hidden; }
-.sc-node footer { margin-top: auto; padding: 5px 12px 7px; border-top: 1px solid var(--sc-border); font-size: 9px; }
+.sc-node p { flex: 1 1 auto; min-height: 0; margin: 7px 12px; font-size: 11px; line-height: 1.25; overflow: hidden; }
+.sc-node footer { flex: 0 0 auto; margin-top: auto; padding: 5px 12px 7px; border-top: 1px solid var(--sc-border); font-size: 9px; }
 .sc-node-state {
   padding: 3px 6px;
   font-size: 9px;
@@ -92,7 +94,8 @@
   border-radius: 999px;
 }
 .sc-node-icon { color: var(--sc-cyan); font-size: 18px; line-height: 1; }
-.sc-node-ports { display: inline-grid; width: 50%; vertical-align: top; padding: 2px 10px 10px; box-sizing: border-box; }
+.sc-node-port-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); flex: 0 0 auto; min-width: 0; overflow: hidden; }
+.sc-node-ports { display: grid; width: 100%; min-width: 0; padding: 2px 10px 4px; box-sizing: border-box; overflow: hidden; }
 .sc-node-outputs { text-align: right; }
 .sc-port-row { display: flex; align-items: center; justify-content: space-between; gap: 5px; min-height: 22px; font-size: 10px; }
 .sc-port-row code { color: var(--sc-cyan); font-size: 9px; }

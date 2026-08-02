@@ -13,7 +13,8 @@ config_field(
   minimum = NULL,
   maximum = NULL,
   step = NULL,
-  help = NULL
+  help = NULL,
+  metadata = list()
 )
 }
 \arguments{
@@ -30,6 +31,9 @@ config_field(
 \item{minimum, maximum, step}{Optional numeric control bounds.}
 
 \item{help}{Optional help text.}
+
+\item{metadata}{Optional host-defined presentation metadata. Core stores this
+value without interpreting domain meaning.}
 }
 \description{
 Define a schema-driven configuration field

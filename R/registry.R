@@ -49,9 +49,12 @@ normalize_capability_presentation <- function(value = list()) {
 #' @param required Whether a value is required.
 #' @param minimum,maximum,step Optional numeric control bounds.
 #' @param help Optional help text.
+#' @param metadata Optional host-defined presentation metadata. Core stores this
+#'   value without interpreting domain meaning.
 #' @export
 config_field <- function(type, label, default = NULL, choices = NULL, required = FALSE,
-                         minimum = NULL, maximum = NULL, step = NULL, help = NULL) {
+                         minimum = NULL, maximum = NULL, step = NULL, help = NULL,
+                         metadata = list()) {
   supported <- c(
     "select", "multi_select", "text", "numeric", "checkbox", "slider",
     "resource", "property", "expression", "custom"
@@ -60,7 +63,7 @@ config_field <- function(type, label, default = NULL, choices = NULL, required =
   list(
     type = type, label = label, default = default, choices = choices,
     required = isTRUE(required), minimum = minimum, maximum = maximum,
-    step = step, help = help
+    step = step, help = help, metadata = metadata %||% list()
   )
 }
 
