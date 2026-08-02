@@ -214,7 +214,7 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE,
       )
     ),
     htmltools::tags$script(htmltools::HTML(sprintf(
-      "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"]');if(!root||root.dataset.configDraftReady)return;root.dataset.configDraftReady='true';root.addEventListener('change',function(e){const field=e.target.closest('[data-shinycap-config-name]');const inspector=e.target.closest('[data-shinycap-node-id]');const control=field?.querySelector('select,input,textarea');if(!field||!inspector||!control)return;let value;if(control.type==='checkbox')value=control.checked;else if(control.multiple){const picker=control.closest('.workflow-schema-picker.is-ordered');if(picker?.dataset.schemaOrder){try{value=JSON.parse(picker.dataset.schemaOrder)}catch(error){value=Array.from(control.selectedOptions).map(o=>o.value)}}else value=Array.from(control.selectedOptions).map(o=>o.value);}else value=control.value;Shiny.setInputValue('%s',{nodeId:inspector.dataset.shinycapNodeId,name:field.dataset.shinycapConfigName,value:value,nonce:Date.now()},{priority:'event'});});})();",
+      "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"]');if(!root||root.dataset.configDraftReady)return;root.dataset.configDraftReady='true';const publish=function(field,inspector,value,action){Shiny.setInputValue('%s',{nodeId:inspector.dataset.shinycapNodeId,name:field.dataset.shinycapConfigName,value:value,action:action||'change',atomic:true,nonce:Date.now()},{priority:'event'});};root.addEventListener('analytics-input-draft',function(e){const field=e.target.closest('[data-shinycap-config-name]');const inspector=e.target.closest('[data-shinycap-node-id]');if(field&&inspector)publish(field,inspector,e.detail?.value,e.detail?.action||'analytics-input');});root.addEventListener('change',function(e){const field=e.target.closest('[data-shinycap-config-name]');const inspector=e.target.closest('[data-shinycap-node-id]');if(!field||!inspector||field.querySelector('[data-shinycap-local-draft=\"true\"]'))return;const control=field.querySelector('select,input,textarea');if(!control)return;let value;if(control.type==='checkbox')value=control.checked;else if(control.multiple)value=Array.from(control.selectedOptions).map(o=>o.value);else value=control.value;publish(field,inspector,value,'change');});})();",
       ns("inspector"), ns("config_draft_event")
     ))),
     htmltools::tags$script(htmltools::HTML(sprintf(
@@ -243,6 +243,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     active_runtime <- shiny::reactiveVal(NULL)
     runtime_snapshot <- shiny::reactiveVal(NULL)
     config_drafts <- shiny::reactiveVal(list())
+    inspector_revision <- shiny::reactiveVal(0L)
 
     output$canvas <- render_capability_canvas({
       capability_canvas(registry, graph())
@@ -283,6 +284,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     }, ignoreInit = TRUE)
 
     output$inspector <- shiny::renderUI({
+      inspector_revision()
       node <- selected_node()
       if (is.null(node)) return(htmltools::tags$div(class = "sc-empty",
         htmltools::tags$strong("Select a capability"),
@@ -300,7 +302,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         ))
       }
       capability <- capability_registry_get(registry, node$capability_id)
-      draft <- config_drafts()[[node$id]] %||% list()
+      draft <- shiny::isolate(config_drafts())[[node$id]] %||% list()
       custom <- if (is.function(capability$custom_ui)) capability$custom_ui(session$ns, node) else NULL
       execution_error <- cache()[[node$id]]$error %||% NULL
       execution_error_message <- if (is.list(execution_error)) {
@@ -344,7 +346,9 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
           htmltools::tags$div(`data-shinycap-config-name` = name, control)
         }),
         custom,
-        shiny::actionButton(session$ns("save_config"), "Apply configuration", class = "btn-primary"),
+        htmltools::tags$div(class = "sc-config-actions",
+          shiny::actionButton(session$ns("save_config"), "Apply configuration", class = "btn-primary"),
+          shiny::actionButton(session$ns("discard_config"), "Discard changes")),
         htmltools::tags$hr(),
         if (identical(cache()[[node$id]]$status %||% NULL, "failed")) {
           htmltools::tags$div(
@@ -364,7 +368,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       capability <- capability_registry_get(registry, node$capability_id)
       draft <- config_drafts()[[node$id]] %||% list()
       config <- setNames(lapply(names(capability$config), function(name) {
-        input[[paste0("config__", name)]] %||% draft[[name]] %||% node$config[[name]]
+        draft[[name]] %||% input[[paste0("config__", name)]] %||% node$config[[name]]
       }), names(capability$config))
       next_graph <- graph()
       next_graph$nodes <- lapply(next_graph$nodes, function(candidate) {
@@ -377,11 +381,21 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       drafts <- config_drafts()
       drafts[[node$id]] <- NULL
       config_drafts(drafts)
+      inspector_revision(inspector_revision() + 1L)
       session$sendCustomMessage("shinycapabilities:set-graph",
         list(id = session$ns("canvas"), graph = graph()))
       session$sendCustomMessage("shinycapabilities:v1:set-graph",
         list(bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = graph()))
     })
+
+    shiny::observeEvent(input$discard_config, {
+      node <- selected_node()
+      if (is.null(node)) return()
+      drafts <- config_drafts()
+      drafts[[node$id]] <- NULL
+      config_drafts(drafts)
+      inspector_revision(inspector_revision() + 1L)
+    }, ignoreInit = TRUE)
 
     create_plan <- function(target = NULL, force = FALSE) {
       plan_workflow(registry, graph(), target = target, cache = cache(), force = force)
@@ -592,6 +606,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     }
     set_config_drafts <- function(value) {
       config_drafts(value %||% list())
+      inspector_revision(inspector_revision() + 1L)
       invisible(config_drafts())
     }
     controls <- list(

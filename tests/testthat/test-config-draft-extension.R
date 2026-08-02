@@ -17,3 +17,12 @@ testthat::test_that("canvas exposes generic draft restoration controls", {
     testthat::expect_identical(session$returned$graph()$nodes[[1]]$config$value, "applied")
   })
 })
+
+testthat::test_that("host-local controls publish atomic drafts without inspector reconstruction", {
+  source <- paste(readLines(testthat::test_path("..", "..", "R", "module.R"), warn = FALSE),
+    collapse = "\n")
+  testthat::expect_match(source, "analytics-input-draft", fixed = TRUE)
+  testthat::expect_match(source, "atomic:true", fixed = TRUE)
+  testthat::expect_match(source, "shiny::isolate(config_drafts())", fixed = TRUE)
+  testthat::expect_match(source, "Discard changes", fixed = TRUE)
+})
