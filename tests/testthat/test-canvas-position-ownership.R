@@ -73,3 +73,63 @@ testthat::test_that("server accepts and retains client node positions", {
     )
   })
 })
+
+testthat::test_that("explicit connection removal preserves nodes and permits reconnection", {
+  registry <- capability_registry()
+  capability_registry_add(registry, register_capability(
+    "edge.source", "1.0.0", "Edge source",
+    outputs = list(data = port_type("dataset"))
+  ))
+  capability_registry_add(registry, register_capability(
+    "edge.target", "1.0.0", "Edge target",
+    inputs = list(data = port_type("dataset", required = TRUE))
+  ))
+  nodes <- list(
+    list(id = "source", capability_id = "edge.source", position = list(x = 40, y = 80), config = list()),
+    list(id = "target", capability_id = "edge.target", position = list(x = 420, y = 80), config = list())
+  )
+  edge <- list(id = "source__data__target__data", source = "source", source_port = "data", target = "target", target_port = "data")
+
+  shiny::testServer(capability_canvas_server, args = list(
+    registry = registry,
+    initial_graph = list(nodes = nodes, edges = list(edge))
+  ), {
+    before <- session$returned$graph()
+    session$setInputs(canvas_event = list(type = "node_selected", nodeId = "source", nonce = "initialize"))
+    session$flushReact()
+    session$setInputs(canvas_event = list(
+      type = "connection_removed",
+      edgeIds = list(edge$id),
+      graph = list(nodes = nodes, edges = list()),
+      nonce = "remove"
+    ))
+    session$flushReact()
+    removed <- session$returned$graph()
+    testthat::expect_length(removed$edges, 0L)
+    testthat::expect_identical(removed$nodes, before$nodes)
+
+    session$setInputs(canvas_event = list(
+      type = "connection_accepted",
+      graph = list(nodes = nodes, edges = list(edge)),
+      nonce = "reconnect"
+    ))
+    session$flushReact()
+    reconnected <- session$returned$graph()
+    testthat::expect_length(reconnected$edges, 1L)
+    testthat::expect_identical(reconnected$nodes, before$nodes)
+  })
+})
+
+testthat::test_that("edge deletion is explicit, selected, and input-focus safe", {
+  source <- paste(readLines(
+    testthat::test_path("..", "..", "tools", "javascript", "src", "widget.jsx"),
+    warn = FALSE
+  ), collapse = "\n")
+
+  testthat::expect_match(source, "onEdgeClick={(event, edge) =>", fixed = TRUE)
+  testthat::expect_match(source, "Remove connection", fixed = TRUE)
+  testthat::expect_match(source, "selectedEdgeId && !isEditableTarget(event.target)", fixed = TRUE)
+  testthat::expect_match(source, "input, textarea, select, [contenteditable='true']", fixed = TRUE)
+  testthat::expect_match(source, "deleteKeyCode={null}", fixed = TRUE)
+  testthat::expect_match(source, "edgeIds: [selectedEdgeId]", fixed = TRUE)
+})

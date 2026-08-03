@@ -28,6 +28,9 @@ const INSERT_NODE_WIDTH = 260;
 const INSERT_NODE_HEIGHT = 150;
 const INSERT_NODE_GAP = 32;
 const isElementTarget = (target) => Boolean(target && typeof target.closest === "function");
+const isEditableTarget = (target) => Boolean(
+  isElementTarget(target) && target.closest("input, textarea, select, [contenteditable='true']")
+);
 const overlaps = (left, right) => !(
   left.x + left.width + INSERT_NODE_GAP <= right.x ||
   right.x + right.width + INSERT_NODE_GAP <= left.x ||
@@ -286,6 +289,7 @@ function Canvas({ element, value }) {
   );
   const [nodes, setNodes] = useState(hydrated.nodes);
   const [edges, setEdges] = useState(hydrated.edges);
+  const [selectedEdgeId, setSelectedEdgeId] = useState(null);
   const [pendingConnection, setPendingConnection] = useState(null);
   const [connectionSource, setConnectionSource] = useState(null);
   const [connectionFeedback, setConnectionFeedback] = useState(null);
@@ -305,6 +309,7 @@ function Canvas({ element, value }) {
       const next = hydrate(message.graph, value.capabilities || [], readOnly);
       setNodes(next.nodes);
       setEdges(next.edges);
+      setSelectedEdgeId((current) => next.edges.some((edge) => edge.id === current) ? current : null);
     };
     window.Shiny?.addCustomMessageHandler?.("shinycapabilities:set-graph", onSetGraph);
     window.Shiny?.addCustomMessageHandler?.("shinycapabilities:v1:set-graph", onSetGraph);
@@ -401,6 +406,36 @@ function Canvas({ element, value }) {
       return next;
     });
   }, [element, nodes, readOnly]);
+
+  const selectedEdge = useMemo(
+    () => edges.find((edge) => edge.id === selectedEdgeId) || null,
+    [edges, selectedEdgeId]
+  );
+  const selectedConnectionLabel = useMemo(() => {
+    if (!selectedEdge) return "";
+    const source = nodes.find((node) => node.id === selectedEdge.source);
+    const target = nodes.find((node) => node.id === selectedEdge.target);
+    const sourceLabel = source?.data?.displayName || selectedEdge.source;
+    const targetLabel = target?.data?.displayName || selectedEdge.target;
+    const sourcePort = friendlyPort(selectedEdge.sourceHandle, source?.data?.outputs?.[selectedEdge.sourceHandle]);
+    const targetPort = friendlyPort(selectedEdge.targetHandle, target?.data?.inputs?.[selectedEdge.targetHandle]);
+    return `${sourceLabel} (${sourcePort}) → ${targetLabel} (${targetPort})`;
+  }, [nodes, selectedEdge]);
+  const selectEdge = useCallback((edgeId) => {
+    setSelectedEdgeId(edgeId);
+    setEdges((current) => current.map((edge) => ({ ...edge, selected: edge.id === edgeId })));
+  }, []);
+  const removeSelectedEdge = useCallback(() => {
+    if (readOnly || !selectedEdgeId) return;
+    setEdges((current) => {
+      const removed = current.find((edge) => edge.id === selectedEdgeId);
+      if (!removed) return current;
+      const next = current.filter((edge) => edge.id !== selectedEdgeId);
+      emit(element, "connection_removed", { edgeIds: [selectedEdgeId], edge: removed }, serialize(nodes, next));
+      return next;
+    });
+    setSelectedEdgeId(null);
+  }, [element, nodes, readOnly, selectedEdgeId]);
 
   const onConnect = useCallback((connection) => {
     if (readOnly) return;
@@ -517,6 +552,11 @@ function Canvas({ element, value }) {
         event.dataTransfer.dropEffect = "copy";
       }}
       onKeyDown={(event) => {
+        if ((event.key === "Delete" || event.key === "Backspace") && selectedEdgeId && !isEditableTarget(event.target)) {
+          event.preventDefault();
+          removeSelectedEdge();
+          return;
+        }
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "d") {
           event.preventDefault();
           duplicateSelected();
@@ -529,11 +569,21 @@ function Canvas({ element, value }) {
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onEdgeClick={(event, edge) => {
+          event.stopPropagation();
+          selectEdge(edge.id);
+        }}
         onConnect={onConnect}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
-        onNodeClick={(_, node) => emit(element, "node_selected", { nodeId: node.id }, graph())}
-        onPaneClick={() => emit(element, "node_selected", { nodeId: null }, graph())}
+        onNodeClick={(_, node) => {
+          selectEdge(null);
+          emit(element, "node_selected", { nodeId: node.id }, graph());
+        }}
+        onPaneClick={() => {
+          selectEdge(null);
+          emit(element, "node_selected", { nodeId: null }, graph());
+        }}
         onNodeDragStop={(_, node) => emit(element, "move_completed", { nodeId: node.id }, graph())}
         onNodesDelete={(deleted) => emit(element, "node_removed", {
           nodeIds: deleted.map((node) => node.id)
@@ -557,6 +607,11 @@ function Canvas({ element, value }) {
         <Controls showInteractive={!readOnly} />
         {value.options?.minimap && <MiniMap pannable zoomable />}
       </ReactFlow>
+      {selectedEdge && !readOnly && <aside className="sc-edge-actions" aria-label="Selected connection">
+        <strong>Selected connection</strong>
+        <span data-testid="shinycap-selected-connection">{selectedConnectionLabel}</span>
+        <button type="button" onClick={removeSelectedEdge}>Remove connection</button>
+      </aside>}
       <div
         className={`sc-connection-feedback${connectionFeedback ? " is-visible" : ""}${connectionFeedback?.valid === false ? " is-rejected" : ""}`}
         role="status"

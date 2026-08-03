@@ -132,6 +132,23 @@
 .sc-state-failed, .sc-state-blocked { border-color: var(--sc-red); }
 .sc-state-stale { border-color: var(--sc-amber); }
 .react-flow__edge-path { stroke: var(--sc-cyan); stroke-width: 2; }
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--sc-amber);
+  stroke-width: 4;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--sc-amber) 65%, transparent));
+}
+.sc-edge-actions {
+  position: absolute; z-index: 9; top: 12px; right: 12px; display: grid; gap: 5px;
+  max-width: min(420px, calc(100% - 24px)); padding: 10px 12px;
+  color: var(--sc-text); background: color-mix(in srgb, var(--sc-panel) 98%, transparent);
+  border: 1px solid var(--sc-amber); border-radius: 8px; box-shadow: 0 8px 24px #0006;
+}
+.sc-edge-actions span { color: var(--sc-muted); font-size: 11px; overflow-wrap: anywhere; }
+.sc-edge-actions button {
+  justify-self: start; padding: 6px 10px; color: #101821; background: var(--sc-amber);
+  border: 1px solid var(--sc-amber); border-radius: 6px; font-weight: 700;
+}
+.sc-edge-actions button:focus-visible { outline: 2px solid var(--sc-cyan); outline-offset: 2px; }
 .react-flow__controls, .react-flow__minimap { background: var(--sc-panel); border: 1px solid var(--sc-border); }
 .react-flow__minimap-mask { fill: color-mix(in srgb, var(--shinycap-color-canvas) 78%, transparent); }
 .react-flow__minimap-node { fill: color-mix(in srgb, var(--shinycap-color-selection) 42%, var(--sc-panel-2)); }

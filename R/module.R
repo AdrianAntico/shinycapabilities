@@ -255,7 +255,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       event <- input$canvas_event
       if (event$type %in% c(
         "capability_dropped", "move_completed", "resize_completed",
-        "connection_accepted", "node_removed", "node_duplicated", "group_created"
+        "connection_accepted", "connection_removed", "node_removed", "node_duplicated", "group_created"
       )) graph(normalize_workflow_graph(event$graph))
       if (identical(event$type, "node_selected")) selected_id(event$nodeId)
       if (identical(event$type, "connection_proposed")) {
