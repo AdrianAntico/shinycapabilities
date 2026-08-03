@@ -1,6 +1,17 @@
+widget_source_contract_path <- function() {
+  candidates <- c(
+    testthat::test_path("..", "..", "tools", "javascript", "src", "widget.jsx"),
+    testthat::test_path("..", "..", "inst", "htmlwidgets", "src", "widget.jsx"),
+    system.file("htmlwidgets", "src", "widget.jsx", package = "shinycapabilities")
+  )
+  path <- candidates[file.exists(candidates)][[1L]]
+  testthat::expect_true(nzchar(path), info = "The packaged widget source contract is required.")
+  path
+}
+
 testthat::test_that("client insertion selects deterministic non-overlapping positions", {
   source <- paste(readLines(
-    testthat::test_path("..", "..", "tools", "javascript", "src", "widget.jsx"),
+    widget_source_contract_path(),
     warn = FALSE
   ), collapse = "\n")
 
@@ -14,14 +25,29 @@ testthat::test_that("client insertion selects deterministic non-overlapping posi
   testthat::expect_match(source, "flow.fitView({ nodes: next, padding: 0.28, maxZoom: 1", fixed = TRUE)
 })
 
-testthat::test_that("generic browser handlers guard non-Element event targets", {
-  widget_source <- paste(readLines(
-    testthat::test_path("..", "..", "tools", "javascript", "src", "widget.jsx"),
+testthat::test_that("restored edges wait for initialized React Flow nodes", {
+  source <- paste(readLines(
+    widget_source_contract_path(),
     warn = FALSE
   ), collapse = "\n")
-  module_source <- paste(readLines(
-    testthat::test_path("..", "..", "R", "module.R"), warn = FALSE
+
+  testthat::expect_match(source, "useNodesInitialized", fixed = TRUE)
+  testthat::expect_match(source, "const [edges, setEdges] = useState([]);", fixed = TRUE)
+  testthat::expect_match(
+    source,
+    "const [pendingHydratedEdges, setPendingHydratedEdges] = useState(hydrated.edges);",
+    fixed = TRUE
+  )
+  testthat::expect_match(source, "if (!nodesInitialized || pendingHydratedEdges === null) return;", fixed = TRUE)
+  testthat::expect_match(source, "setEdges(pendingHydratedEdges);", fixed = TRUE)
+})
+
+testthat::test_that("generic browser handlers guard non-Element event targets", {
+  widget_source <- paste(readLines(
+    widget_source_contract_path(),
+    warn = FALSE
   ), collapse = "\n")
+  module_source <- paste(deparse(body(capability_canvas_ui)), collapse = "\n")
 
   testthat::expect_match(
     widget_source,
@@ -124,7 +150,7 @@ testthat::test_that("explicit connection removal preserves nodes and permits rec
 
 testthat::test_that("edge deletion is explicit, selected, and input-focus safe", {
   source <- paste(readLines(
-    testthat::test_path("..", "..", "tools", "javascript", "src", "widget.jsx"),
+    widget_source_contract_path(),
     warn = FALSE
   ), collapse = "\n")
 
