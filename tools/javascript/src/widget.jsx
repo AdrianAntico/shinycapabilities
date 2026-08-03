@@ -24,6 +24,38 @@ const INSERT_EVENT = "shinycapabilities:v1:insert";
 const LEGACY_INSERT_EVENT = "shinycapabilities:insert";
 const CAPABILITY_MIME = "application/vnd.shinycapabilities.capability+json;version=1";
 const LEGACY_CAPABILITY_MIME = "application/x-shinycapability";
+const INSERT_NODE_WIDTH = 260;
+const INSERT_NODE_HEIGHT = 150;
+const INSERT_NODE_GAP = 32;
+const isElementTarget = (target) => Boolean(target && typeof target.closest === "function");
+const overlaps = (left, right) => !(
+  left.x + left.width + INSERT_NODE_GAP <= right.x ||
+  right.x + right.width + INSERT_NODE_GAP <= left.x ||
+  left.y + left.height + INSERT_NODE_GAP <= right.y ||
+  right.y + right.height + INSERT_NODE_GAP <= left.y
+);
+const nextInsertPosition = (requested, current) => {
+  const anchor = current.length ? current[0].position : requested;
+  const occupied = current.map((node) => ({
+    x: node.position.x,
+    y: node.position.y,
+    width: Math.max(240, node.width || node.measured?.width || INSERT_NODE_WIDTH),
+    height: Math.max(INSERT_NODE_HEIGHT, node.height || node.measured?.height || INSERT_NODE_HEIGHT)
+  }));
+  const columns = 3;
+  for (let index = 0; index <= current.length; index += 1) {
+    const candidate = {
+      x: anchor.x + (index % columns) * (INSERT_NODE_WIDTH + INSERT_NODE_GAP),
+      y: anchor.y + Math.floor(index / columns) * (INSERT_NODE_HEIGHT + INSERT_NODE_GAP),
+      width: INSERT_NODE_WIDTH,
+      height: INSERT_NODE_HEIGHT
+    };
+    if (!occupied.some((rect) => overlaps(candidate, rect))) {
+      return { x: candidate.x, y: candidate.y };
+    }
+  }
+  return requested;
+};
 const friendlyPort = (name, port) =>
   port?.displayLabel || String(name).replaceAll("_", " ");
 const ALLOWED_ICONS = new Set([
@@ -258,6 +290,7 @@ function Canvas({ element, value }) {
   const [connectionSource, setConnectionSource] = useState(null);
   const [connectionFeedback, setConnectionFeedback] = useState(null);
   const wrapper = useRef(null);
+  const insertSequence = useRef(0);
   const flow = useReactFlow();
   const catalog = useMemo(() => byId(value.capabilities || []), [value.capabilities]);
 
@@ -279,6 +312,7 @@ function Canvas({ element, value }) {
 
   useEffect(() => {
     const handler = (event) => {
+      if (!isElementTarget(event.target)) return;
       const button = event.target.closest(".sc-widget-command");
       if (!button || button.dataset.target !== element.id) return;
       if (button.dataset.command === "fitView" || button.dataset.shinycapCommand === "fit-view") {
@@ -305,17 +339,20 @@ function Canvas({ element, value }) {
       const capability = catalog.get(capabilityId);
       if (!capability || readOnly) return;
       const bounds = wrapper.current?.getBoundingClientRect();
-      const position = flow.screenToFlowPosition({
+      const requestedPosition = flow.screenToFlowPosition({
         x: (bounds?.left || 0) + (event.detail?.x || 200),
         y: (bounds?.top || 0) + (event.detail?.y || 160)
       });
-      const id = `${capabilityId.replace(/[^\w-]/g, "-")}-${Date.now()}`;
-      const nextNode = hydrate({ nodes: [{
-        id, capability_id: capabilityId, position, config: {}, state: "unconfigured"
-      }], edges: [] }, value.capabilities || [], readOnly).nodes[0];
       setNodes((current) => {
+        insertSequence.current += 1;
+        const id = `${capabilityId.replace(/[^\w-]/g, "-")}-${Date.now()}-${insertSequence.current}`;
+        const position = nextInsertPosition(requestedPosition, current);
+        const nextNode = hydrate({ nodes: [{
+          id, capability_id: capabilityId, position, config: {}, state: "unconfigured"
+        }], edges: [] }, value.capabilities || [], readOnly).nodes[0];
         const next = [...current, nextNode];
         emit(element, "capability_dropped", { nodeId: id, capabilityId }, serialize(next, edges));
+        window.requestAnimationFrame(() => flow.fitView({ nodes: next, padding: 0.18, duration: 0 }));
         return next;
       });
     };
