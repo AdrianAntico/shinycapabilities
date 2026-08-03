@@ -2,6 +2,7 @@ import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "
 import { createRoot } from "react-dom/client";
 import {
   Background,
+  BaseEdge,
   Controls,
   Handle,
   MiniMap,
@@ -12,6 +13,7 @@ import {
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
+  getSmoothStepPath,
   useReactFlow
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -27,6 +29,7 @@ const LEGACY_CAPABILITY_MIME = "application/x-shinycapability";
 const INSERT_NODE_WIDTH = 260;
 const INSERT_NODE_HEIGHT = 150;
 const INSERT_NODE_GAP = 32;
+const INSERT_VIEWPORT_INSET = 36;
 const isElementTarget = (target) => Boolean(target && typeof target.closest === "function");
 const isEditableTarget = (target) => Boolean(
   isElementTarget(target) && target.closest("input, textarea, select, [contenteditable='true']")
@@ -37,15 +40,18 @@ const overlaps = (left, right) => !(
   left.y + left.height + INSERT_NODE_GAP <= right.y ||
   right.y + right.height + INSERT_NODE_GAP <= left.y
 );
-const nextInsertPosition = (requested, current) => {
+const nextInsertPosition = (requested, current, viewportWidth = null) => {
   const anchor = current.length ? current[0].position : requested;
+  const columns = Math.max(3, Math.floor(
+    ((viewportWidth || INSERT_NODE_WIDTH * 3) - INSERT_VIEWPORT_INSET * 2 + INSERT_NODE_GAP) /
+      (INSERT_NODE_WIDTH + INSERT_NODE_GAP)
+  ));
   const occupied = current.map((node) => ({
     x: node.position.x,
     y: node.position.y,
     width: Math.max(240, node.width || node.measured?.width || INSERT_NODE_WIDTH),
     height: Math.max(INSERT_NODE_HEIGHT, node.height || node.measured?.height || INSERT_NODE_HEIGHT)
   }));
-  const columns = 3;
   for (let index = 0; index <= current.length; index += 1) {
     const candidate = {
       x: anchor.x + (index % columns) * (INSERT_NODE_WIDTH + INSERT_NODE_GAP),
@@ -84,6 +90,21 @@ const FONT_AWESOME_ALIASES = {
   "tree-deciduous": "tree", "tree-conifer": "tree",
   "warning-sign": "triangle-exclamation", "zoom-in": "magnifying-glass-plus"
 };
+const AccessibleEdge = memo((props) => {
+  const horizontalPinch = Math.abs(props.sourceY - props.targetY) < 1 &&
+    props.targetX - props.sourceX < INSERT_NODE_GAP;
+  const [defaultPath] = getSmoothStepPath(props);
+  const laneY = props.sourceY - INSERT_VIEWPORT_INSET;
+  const edgePath = horizontalPinch
+    ? `M ${props.sourceX} ${props.sourceY} L ${props.sourceX + 20} ${props.sourceY} ` +
+      `L ${props.sourceX + 20} ${laneY} L ${props.targetX - 20} ${laneY} ` +
+      `L ${props.targetX - 20} ${props.targetY} L ${props.targetX} ${props.targetY}`
+    : defaultPath;
+  return <BaseEdge id={props.id} path={edgePath} markerStart={props.markerStart}
+    markerEnd={props.markerEnd} style={props.style} className={props.className}
+    interactionWidth={20} />;
+});
+const EDGE_TYPES = { accessible: AccessibleEdge };
 const CapabilityIcon = ({ value, className = "" }) => {
   const icon = safeIcon(value);
   const rendered = FONT_AWESOME_ALIASES[icon] || icon;
@@ -276,7 +297,7 @@ function hydrate(graph, capabilities, readOnly) {
       targetHandle: edge.target_port,
       ariaLabel: `Connection ${edge.id}: ${edge.source} ${edge.source_port} to ${edge.target} ${edge.target_port}`,
       data: { shinycapEdgeId: edge.id, sourcePort: edge.source_port, targetPort: edge.target_port },
-      type: "smoothstep"
+      type: "accessible"
     }))
   };
 }
@@ -294,6 +315,7 @@ function Canvas({ element, value }) {
   const [connectionSource, setConnectionSource] = useState(null);
   const [connectionFeedback, setConnectionFeedback] = useState(null);
   const wrapper = useRef(null);
+  const selectedEdgeElement = useRef(null);
   const insertSequence = useRef(0);
   const flow = useReactFlow();
   const catalog = useMemo(() => byId(value.capabilities || []), [value.capabilities]);
@@ -351,13 +373,13 @@ function Canvas({ element, value }) {
       setNodes((current) => {
         insertSequence.current += 1;
         const id = `${capabilityId.replace(/[^\w-]/g, "-")}-${Date.now()}-${insertSequence.current}`;
-        const position = nextInsertPosition(requestedPosition, current);
+        const position = nextInsertPosition(requestedPosition, current, bounds?.width);
         const nextNode = hydrate({ nodes: [{
           id, capability_id: capabilityId, position, config: {}, state: "unconfigured"
         }], edges: [] }, value.capabilities || [], readOnly).nodes[0];
         const next = [...current, nextNode];
         emit(element, "capability_dropped", { nodeId: id, capabilityId }, serialize(next, edges));
-        window.requestAnimationFrame(() => flow.fitView({ nodes: next, padding: 0.18, duration: 0 }));
+        window.requestAnimationFrame(() => flow.fitView({ nodes: next, padding: 0.28, maxZoom: 1, duration: 0 }));
         return next;
       });
     };
@@ -375,7 +397,7 @@ function Canvas({ element, value }) {
       if (message.id !== element.id || !pendingConnection) return;
       if (message.result?.valid) {
         setEdges((current) => {
-          const next = addEdge({ ...pendingConnection, type: "smoothstep" }, current);
+          const next = addEdge({ ...pendingConnection, type: "accessible" }, current);
           emit(element, "connection_accepted", { edge: pendingConnection }, serialize(nodes, next));
           return next;
         });
@@ -421,7 +443,8 @@ function Canvas({ element, value }) {
     const targetPort = friendlyPort(selectedEdge.targetHandle, target?.data?.inputs?.[selectedEdge.targetHandle]);
     return `${sourceLabel} (${sourcePort}) → ${targetLabel} (${targetPort})`;
   }, [nodes, selectedEdge]);
-  const selectEdge = useCallback((edgeId) => {
+  const selectEdge = useCallback((edgeId, edgeElement = null) => {
+    if (edgeElement) selectedEdgeElement.current = edgeElement;
     setSelectedEdgeId(edgeId);
     setEdges((current) => current.map((edge) => ({ ...edge, selected: edge.id === edgeId })));
   }, []);
@@ -435,6 +458,7 @@ function Canvas({ element, value }) {
       return next;
     });
     setSelectedEdgeId(null);
+    window.requestAnimationFrame(() => wrapper.current?.focus());
   }, [element, nodes, readOnly, selectedEdgeId]);
 
   const onConnect = useCallback((connection) => {
@@ -546,12 +570,25 @@ function Canvas({ element, value }) {
       className="sc-flow"
       data-shinycap-part="canvas"
       ref={wrapper}
+      tabIndex={-1}
       onDrop={onDrop}
       onDragOver={(event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "copy";
       }}
       onKeyDown={(event) => {
+        const edgeTarget = isElementTarget(event.target) ? event.target.closest('.react-flow__edge') : null;
+        if (edgeTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          selectEdge(edgeTarget.dataset.id, edgeTarget);
+          return;
+        }
+        if (event.key === "Escape" && selectedEdgeId) {
+          event.preventDefault();
+          selectEdge(null);
+          window.requestAnimationFrame(() => selectedEdgeElement.current?.focus());
+          return;
+        }
         if ((event.key === "Delete" || event.key === "Backspace") && selectedEdgeId && !isEditableTarget(event.target)) {
           event.preventDefault();
           removeSelectedEdge();
@@ -567,11 +604,12 @@ function Canvas({ element, value }) {
         nodes={presentedNodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={EDGE_TYPES}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onEdgeClick={(event, edge) => {
           event.stopPropagation();
-          selectEdge(edge.id);
+          selectEdge(edge.id, event.currentTarget);
         }}
         onConnect={onConnect}
         onConnectStart={onConnectStart}

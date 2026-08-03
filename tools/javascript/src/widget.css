@@ -137,6 +137,11 @@
   stroke-width: 4;
   filter: drop-shadow(0 0 4px color-mix(in srgb, var(--sc-amber) 65%, transparent));
 }
+.react-flow__edge:focus-visible .react-flow__edge-path {
+  stroke: var(--sc-amber);
+  stroke-width: 4;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--sc-amber) 65%, transparent));
+}
 .sc-edge-actions {
   position: absolute; z-index: 9; top: 12px; right: 12px; display: grid; gap: 5px;
   max-width: min(420px, calc(100% - 24px)); padding: 10px 12px;

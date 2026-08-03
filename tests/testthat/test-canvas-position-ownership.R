@@ -5,11 +5,13 @@ testthat::test_that("client insertion selects deterministic non-overlapping posi
   ), collapse = "\n")
 
   testthat::expect_match(source, "const nextInsertPosition =", fixed = TRUE)
-  testthat::expect_match(source, "const anchor = current.length ? current[0].position : requested;", fixed = TRUE)
-  testthat::expect_match(source, "const position = nextInsertPosition(requestedPosition, current);", fixed = TRUE)
+  testthat::expect_match(source, "const INSERT_VIEWPORT_INSET = 36;", fixed = TRUE)
+  testthat::expect_match(source, "const position = nextInsertPosition(requestedPosition, current, bounds?.width);", fixed = TRUE)
+  testthat::expect_match(source, "const columns = Math.max(3", fixed = TRUE)
+  testthat::expect_match(source, "anchor.x + (index % columns)", fixed = TRUE)
   testthat::expect_match(source, "INSERT_NODE_WIDTH + INSERT_NODE_GAP", fixed = TRUE)
   testthat::expect_match(source, "serialize(next, edges)", fixed = TRUE)
-  testthat::expect_match(source, "flow.fitView({ nodes: next", fixed = TRUE)
+  testthat::expect_match(source, "flow.fitView({ nodes: next, padding: 0.28, maxZoom: 1", fixed = TRUE)
 })
 
 testthat::test_that("generic browser handlers guard non-Element event targets", {
@@ -132,4 +134,11 @@ testthat::test_that("edge deletion is explicit, selected, and input-focus safe",
   testthat::expect_match(source, "input, textarea, select, [contenteditable='true']", fixed = TRUE)
   testthat::expect_match(source, "deleteKeyCode={null}", fixed = TRUE)
   testthat::expect_match(source, "edgeIds: [selectedEdgeId]", fixed = TRUE)
+  testthat::expect_match(source, "event.target.closest('.react-flow__edge')", fixed = TRUE)
+  testthat::expect_match(source, 'event.key === "Enter" || event.key === " "', fixed = TRUE)
+  testthat::expect_match(source, 'event.key === "Escape" && selectedEdgeId', fixed = TRUE)
+  testthat::expect_match(source, "selectedEdgeElement.current?.focus()", fixed = TRUE)
+  testthat::expect_match(source, "const AccessibleEdge = memo", fixed = TRUE)
+  testthat::expect_match(source, "interactionWidth={20}", fixed = TRUE)
+  testthat::expect_match(source, "edgeTypes={EDGE_TYPES}", fixed = TRUE)
 })
