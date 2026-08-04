@@ -325,7 +325,6 @@ function Canvas({ element, value }) {
   const [nodes, setNodes] = useState(hydrated.nodes);
   const [edges, setEdges] = useState([]);
   const [pendingHydratedEdges, setPendingHydratedEdges] = useState(hydrated.edges);
-  const mountedEdges = useRef([]);
   const [selectedEdgeId, setSelectedEdgeId] = useState(null);
   const [pendingConnection, setPendingConnection] = useState(null);
   const [connectionSource, setConnectionSource] = useState(null);
@@ -360,10 +359,6 @@ function Canvas({ element, value }) {
   );
 
   useEffect(() => {
-    mountedEdges.current = edges;
-  }, [edges]);
-
-  useEffect(() => {
     const onSetGraph = (message) => {
       if (message.id !== element.id) return;
       const revision = Number(message.graphRevision);
@@ -385,20 +380,11 @@ function Canvas({ element, value }) {
       element.dataset.shinycapAuthoritativeNodeCount = String(next.nodes.length);
       element.dataset.shinycapAuthoritativeEdgeCount = String(next.edges.length);
       setNodes(next.nodes);
-      const preservesMountedTopology = mountedEdges.current.length === next.edges.length &&
-        mountedEdges.current.every((edge) => next.edges.some((candidate) =>
-          candidate.id === edge.id && candidate.source === edge.source && candidate.target === edge.target &&
-          candidate.sourceHandle === edge.sourceHandle && candidate.targetHandle === edge.targetHandle));
-      if (preservesMountedTopology) {
-        setEdges(next.edges);
-        setPendingHydratedEdges(null);
-        element.dataset.shinycapRestorationReady = "true";
-        element.dataset.shinycapRestoredNodeCount = String(next.nodes.length);
-        element.dataset.shinycapRestoredEdgeCount = String(next.edges.length);
-      } else {
-        setEdges([]);
-        setPendingHydratedEdges(next.edges);
-      }
+      setEdges(next.edges);
+      setPendingHydratedEdges(null);
+      element.dataset.shinycapRestorationReady = "true";
+      element.dataset.shinycapRestoredNodeCount = String(next.nodes.length);
+      element.dataset.shinycapRestoredEdgeCount = String(next.edges.length);
       setSelectedEdgeId((current) => next.edges.some((edge) => edge.id === current) ? current : null);
     };
     window.Shiny?.addCustomMessageHandler?.("shinycapabilities:set-graph", onSetGraph);
@@ -487,7 +473,6 @@ function Canvas({ element, value }) {
       if (message.result?.valid) {
         setEdges((current) => {
           const next = addEdge({ ...pendingConnection, type: "accessible" }, current);
-          mountedEdges.current = next;
           emit(element, "connection_accepted", { edge: pendingConnection }, serialize(nodes, next));
           return next;
         });
