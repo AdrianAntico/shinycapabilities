@@ -278,7 +278,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         session$onFlushed(function() session$sendCustomMessage(
           "shinycapabilities:v1:selection-ack",
           list(bridgeVersion = "1.0.0", id = session$ns("canvas"), nodeId = event$nodeId,
-            capabilityId = selected_node()$capability_id %||% NULL,
+            capabilityId = shiny::isolate(selected_node())$capability_id %||% NULL,
             graphRevision = shiny::isolate(graph_revision()), mutationId = event$mutationId %||% NULL)
         ), once = TRUE)
       }
