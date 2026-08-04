@@ -11,7 +11,8 @@ capability_canvas(
   minimap = TRUE,
   width = NULL,
   height = "640px",
-  element_id = NULL
+  element_id = NULL,
+  graph_revision = 0L
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ capability_canvas(
 \item{width, height}{Widget dimensions.}
 
 \item{element_id}{Optional HTML element identifier.}
+
+\item{graph_revision}{Monotonic authoritative graph revision.}
 }
 \description{
 Create a capability canvas htmlwidget

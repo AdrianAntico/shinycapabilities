@@ -28,6 +28,7 @@ registry_payload <- function(registry) {
 #' @param registry Capability registry.
 #' @param graph Initial workflow graph.
 #' @param read_only Disable graph editing.
+#' @param graph_revision Monotonic authoritative graph revision.
 #' @param minimap Display the minimap.
 #' @param width,height Widget dimensions.
 #' @param element_id Optional HTML element identifier.
@@ -35,12 +36,13 @@ registry_payload <- function(registry) {
 capability_canvas <- function(
     registry, graph = list(nodes = list(), edges = list()),
     read_only = FALSE, minimap = TRUE, width = NULL, height = "640px",
-    element_id = NULL) {
+    element_id = NULL, graph_revision = 0L) {
   htmlwidgets::createWidget(
     name = "capability_canvas",
     x = list(
       capabilities = registry_payload(registry),
       graph = normalize_workflow_graph(graph),
+      graphRevision = as.integer(graph_revision),
       options = list(
         readOnly = isTRUE(read_only), minimap = isTRUE(minimap),
         bridgeVersion = "1.0.0"

@@ -35,6 +35,10 @@ const isElementTarget = (target) => Boolean(target && typeof target.closest === 
 const isEditableTarget = (target) => Boolean(
   isElementTarget(target) && target.closest("input, textarea, select, [contenteditable='true']")
 );
+const GRAPH_MUTATION_TYPES = new Set([
+  "capability_dropped", "move_completed", "resize_completed", "connection_accepted",
+  "connection_removed", "node_removed", "node_duplicated", "group_created"
+]);
 const overlaps = (left, right) => !(
   left.x + left.width + INSERT_NODE_GAP <= right.x ||
   right.x + right.width + INSERT_NODE_GAP <= left.x ||
@@ -115,7 +119,15 @@ const CapabilityIcon = ({ value, className = "" }) => {
 function emit(element, type, payload, graph) {
   if (!window.Shiny?.setInputValue) return;
   const nonce = `${Date.now()}-${Math.random()}`;
-  const event = { type, ...payload, graph, nonce };
+  const protocol = element.__shinyCapabilitiesProtocol;
+  const mutationId = `${type}-${nonce}`;
+  if (GRAPH_MUTATION_TYPES.has(type)) protocol?.pendingGraphMutations.add(mutationId);
+  if (type === "node_selected" && protocol) protocol.pendingSelectionMutation = mutationId;
+  protocol?.publishState();
+  const event = {
+    type, ...payload, graph, nonce, mutationId,
+    baseGraphRevision: protocol?.serverRevision || 0
+  };
   window.Shiny.setInputValue(
     `${element.id}_event`,
     event,
@@ -319,6 +331,23 @@ function Canvas({ element, value }) {
   const wrapper = useRef(null);
   const selectedEdgeElement = useRef(null);
   const insertSequence = useRef(0);
+  const protocol = useRef(null);
+  if (!protocol.current) {
+    protocol.current = {
+      serverRevision: Number(value.graphRevision) || 0,
+      pendingGraphMutations: new Set(),
+      pendingSelectionMutation: null,
+      lastPublication: null,
+      publishState: () => {}
+    };
+  }
+  protocol.current.publishState = () => {
+    element.dataset.shinycapGraphRevision = String(protocol.current.serverRevision);
+    element.dataset.shinycapPendingMutations = String(protocol.current.pendingGraphMutations.size);
+    element.dataset.shinycapGraphSynchronized = String(protocol.current.pendingGraphMutations.size === 0);
+  };
+  element.__shinyCapabilitiesProtocol = protocol.current;
+  protocol.current.publishState();
   const flow = useReactFlow();
   const nodesInitialized = useNodesInitialized({ includeHiddenNodes: true });
   const catalog = useMemo(() => byId(value.capabilities || []), [value.capabilities]);
@@ -331,6 +360,21 @@ function Canvas({ element, value }) {
   useEffect(() => {
     const onSetGraph = (message) => {
       if (message.id !== element.id) return;
+      const revision = Number(message.graphRevision);
+      const ordered = Number.isFinite(revision);
+      const ack = message.ackMutationId || null;
+      const publication = `${ordered ? revision : "legacy"}:${ack || ""}:${message.reason || ""}`;
+      if (publication === protocol.current.lastPublication) return;
+      if (ordered && revision < protocol.current.serverRevision) return;
+      if (ordered && revision === protocol.current.serverRevision &&
+          protocol.current.pendingGraphMutations.size &&
+          !protocol.current.pendingGraphMutations.has(ack)) return;
+      if (!ordered && protocol.current.pendingGraphMutations.size) return;
+      if (ack) protocol.current.pendingGraphMutations.delete(ack);
+      if (ordered) protocol.current.serverRevision = revision;
+      protocol.current.lastPublication = publication;
+      protocol.current.publishState();
+      element.dataset.shinycapRestorationReady = "false";
       const next = hydrate(message.graph, value.capabilities || [], readOnly);
       setNodes(next.nodes);
       setEdges([]);
@@ -342,10 +386,25 @@ function Canvas({ element, value }) {
   }, [element.id, readOnly, value.capabilities]);
 
   useEffect(() => {
+    const onSelectionAck = (message) => {
+      if (message.id !== element.id) return;
+      if (message.mutationId && message.mutationId !== protocol.current.pendingSelectionMutation) return;
+      protocol.current.pendingSelectionMutation = null;
+      element.dataset.shinycapSelectedNodeId = message.nodeId || "";
+      element.dataset.shinycapSelectedCapabilityId = message.capabilityId || "";
+      element.dataset.shinycapInspectorRevision = String(message.graphRevision ?? protocol.current.serverRevision);
+    };
+    window.Shiny?.addCustomMessageHandler?.("shinycapabilities:v1:selection-ack", onSelectionAck);
+  }, [element.id]);
+
+  useEffect(() => {
     if (!nodesInitialized || pendingHydratedEdges === null) return;
     setEdges(pendingHydratedEdges);
     setPendingHydratedEdges(null);
-  }, [nodesInitialized, pendingHydratedEdges]);
+    element.dataset.shinycapRestorationReady = "true";
+    element.dataset.shinycapRestoredNodeCount = String(nodes.length);
+    element.dataset.shinycapRestoredEdgeCount = String(pendingHydratedEdges.length);
+  }, [element, nodes.length, nodesInitialized, pendingHydratedEdges]);
 
   useEffect(() => {
     const handler = (event) => {

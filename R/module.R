@@ -246,9 +246,22 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     runtime_snapshot <- shiny::reactiveVal(NULL)
     config_drafts <- shiny::reactiveVal(list())
     inspector_revision <- shiny::reactiveVal(0L)
+    graph_revision <- shiny::reactiveVal(0L)
+
+    publish_graph <- function(ack_mutation_id = NULL, reason = "server_publication") {
+      graph_revision(shiny::isolate(graph_revision()) + 1L)
+      payload <- list(
+        bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = shiny::isolate(graph()),
+        graphRevision = shiny::isolate(graph_revision()), ackMutationId = ack_mutation_id,
+        reason = reason
+      )
+      session$sendCustomMessage("shinycapabilities:set-graph", payload)
+      session$sendCustomMessage("shinycapabilities:v1:set-graph", payload)
+      invisible(payload)
+    }
 
     output$canvas <- render_capability_canvas({
-      capability_canvas(registry, graph())
+      capability_canvas(registry, graph(), graph_revision = graph_revision())
     })
 
     shiny::observeEvent(input$canvas_event, {
@@ -256,8 +269,19 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       if (event$type %in% c(
         "capability_dropped", "move_completed", "resize_completed",
         "connection_accepted", "connection_removed", "node_removed", "node_duplicated", "group_created"
-      )) graph(normalize_workflow_graph(event$graph))
-      if (identical(event$type, "node_selected")) selected_id(event$nodeId)
+      )) {
+        graph(normalize_workflow_graph(event$graph))
+        publish_graph(event$mutationId %||% NULL, paste0("client_", event$type))
+      }
+      if (identical(event$type, "node_selected")) {
+        selected_id(event$nodeId)
+        session$onFlushed(function() session$sendCustomMessage(
+          "shinycapabilities:v1:selection-ack",
+          list(bridgeVersion = "1.0.0", id = session$ns("canvas"), nodeId = event$nodeId,
+            capabilityId = selected_node()$capability_id %||% NULL,
+            graphRevision = shiny::isolate(graph_revision()), mutationId = event$mutationId %||% NULL)
+        ), once = TRUE)
+      }
       if (identical(event$type, "connection_proposed")) {
         result <- validate_connection(registry, graph(), event$edge)
         session$sendCustomMessage("shinycapabilities:v1:connection-result", list(
@@ -392,10 +416,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       drafts[[node$id]] <- NULL
       config_drafts(drafts)
       inspector_revision(inspector_revision() + 1L)
-      session$sendCustomMessage("shinycapabilities:set-graph",
-        list(id = session$ns("canvas"), graph = graph()))
-      session$sendCustomMessage("shinycapabilities:v1:set-graph",
-        list(bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = graph()))
+      publish_graph(reason = "configuration_applied")
     })
 
     shiny::observeEvent(input$discard_config, {
@@ -436,10 +457,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         node
       })
       graph(normalize_workflow_graph(next_graph))
-      session$sendCustomMessage("shinycapabilities:set-graph",
-        list(id = session$ns("canvas"), graph = graph()))
-      session$sendCustomMessage("shinycapabilities:v1:set-graph",
-        list(bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = graph()))
+      publish_graph(reason = "runtime_publication")
     }
     poll_runtime <- function() {
       runtime <- active_runtime()
@@ -490,10 +508,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         node
       })
       graph(normalize_workflow_graph(next_graph))
-      session$sendCustomMessage("shinycapabilities:set-graph",
-        list(id = session$ns("canvas"), graph = graph()))
-      session$sendCustomMessage("shinycapabilities:v1:set-graph",
-        list(bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = graph()))
+      publish_graph(reason = "failed_state_reset")
     }
     command_cancel_node <- function() {
       runtime <- active_runtime()
@@ -608,10 +623,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       node_ids <- vapply(normalized$nodes, `[[`, character(1), "id")
       if (!is.null(selected) && !selected %in% node_ids) selected_id(NULL)
       graph(normalized)
-      session$sendCustomMessage("shinycapabilities:set-graph",
-        list(id = session$ns("canvas"), graph = graph()))
-      session$sendCustomMessage("shinycapabilities:v1:set-graph",
-        list(bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = graph()))
+      publish_graph(reason = "graph_replaced")
       invisible(graph())
     }
     set_config_drafts <- function(value) {
@@ -649,6 +661,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
          set_graph = set_graph, set_cache = function(value) cache(value),
          config_drafts = shiny::reactive(config_drafts()),
          set_config_drafts = set_config_drafts,
+         graph_revision = shiny::reactive(graph_revision()),
          controls = controls, contract_version = "1.0.0")
   })
 }
