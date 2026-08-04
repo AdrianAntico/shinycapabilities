@@ -345,6 +345,8 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         paste(execution_error %||% "Unknown failure", collapse = " ")
       }
       htmltools::tags$div(`data-shinycap-node-id` = node$id,
+        `data-shinycap-capability-id` = node$capability_id,
+        `data-shinycap-graph-revision` = graph_revision(),
         htmltools::tags$h2(capability$display_name),
         htmltools::tags$p(capability$description),
         htmltools::tags$dl(class = "sc-node-facts",

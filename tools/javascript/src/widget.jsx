@@ -147,6 +147,7 @@ const CapabilityNode = memo(({ id, data, selected }) => (
     data-shinycap-state={data.state || "unconfigured"}
     data-shinycap-selected={selected ? "true" : "false"}
     data-shinycap-node-id={id}
+    data-shinycap-capability-id={data.capabilityId}
     data-testid={`shinycap-node-card-${id}`}
     aria-label={`${data.displayName}, ${data.state || "unconfigured"}`}
   >

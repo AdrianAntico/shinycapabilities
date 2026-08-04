@@ -72,4 +72,5 @@ testthat::test_that("client rejects stale publications and exposes semantic read
   testthat::expect_match(source, "shinycapRestorationReady", fixed = TRUE)
   testthat::expect_match(source, "shinycapSelectedNodeId", fixed = TRUE)
   testthat::expect_match(source, "shinycapInspectorRevision", fixed = TRUE)
+  testthat::expect_match(source, "data-shinycap-capability-id", fixed = TRUE)
 })
