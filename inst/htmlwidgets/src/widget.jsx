@@ -377,6 +377,8 @@ function Canvas({ element, value }) {
       protocol.current.publishState();
       element.dataset.shinycapRestorationReady = "false";
       const next = hydrate(message.graph, value.capabilities || [], readOnly);
+      element.dataset.shinycapAuthoritativeNodeCount = String(next.nodes.length);
+      element.dataset.shinycapAuthoritativeEdgeCount = String(next.edges.length);
       setNodes(next.nodes);
       setEdges([]);
       setPendingHydratedEdges(next.edges);
