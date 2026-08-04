@@ -35,5 +35,8 @@ testthat::test_that("bundled Selection System has one lifecycle owner", {
     package = "shinycapabilities"), warn = FALSE), collapse = "\n")
   testthat::expect_equal(length(gregexpr("Shiny.inputBindings.register", source, fixed = TRUE)[[1]]), 1L)
   testthat::expect_match(source, "shinycapabilities.selectionInput", fixed = TRUE)
+  testthat::expect_match(source, "selectionMounted", fixed = TRUE)
+  testthat::expect_match(source, "selectionState", fixed = TRUE)
+  testthat::expect_match(source, "selectionDatasetRevision", fixed = TRUE)
   testthat::expect_false(grepl("virtualSelect", source, ignore.case = TRUE))
 })

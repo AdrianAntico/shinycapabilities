@@ -15,7 +15,8 @@ import {
   applyNodeChanges,
   getSmoothStepPath,
   useNodesInitialized,
-  useReactFlow
+  useReactFlow,
+  useUpdateNodeInternals
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./widget.css";
@@ -325,6 +326,7 @@ function Canvas({ element, value }) {
   const [nodes, setNodes] = useState(hydrated.nodes);
   const [edges, setEdges] = useState([]);
   const [pendingHydratedEdges, setPendingHydratedEdges] = useState(hydrated.edges);
+  const restorationFrame = useRef(0);
   const [selectedEdgeId, setSelectedEdgeId] = useState(null);
   const [pendingConnection, setPendingConnection] = useState(null);
   const [connectionSource, setConnectionSource] = useState(null);
@@ -350,6 +352,7 @@ function Canvas({ element, value }) {
   element.__shinyCapabilitiesProtocol = protocol.current;
   protocol.current.publishState();
   const flow = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const nodesInitialized = useNodesInitialized({ includeHiddenNodes: true });
   const catalog = useMemo(() => byId(value.capabilities || []), [value.capabilities]);
 
@@ -377,28 +380,42 @@ function Canvas({ element, value }) {
       protocol.current.publishState();
       element.dataset.shinycapRestorationReady = "false";
       const next = hydrate(message.graph, value.capabilities || [], readOnly);
+      const selectedNodeId = element.dataset.shinycapSelectedNodeId || null;
+      next.nodes = next.nodes.map((node) => ({ ...node, selected: node.id === selectedNodeId }));
       element.dataset.shinycapAuthoritativeNodeCount = String(next.nodes.length);
       element.dataset.shinycapAuthoritativeEdgeCount = String(next.edges.length);
       setNodes(next.nodes);
       setEdges(next.edges);
       setPendingHydratedEdges(null);
-      element.dataset.shinycapRestorationReady = "true";
-      element.dataset.shinycapRestoredNodeCount = String(next.nodes.length);
-      element.dataset.shinycapRestoredEdgeCount = String(next.edges.length);
+      cancelAnimationFrame(restorationFrame.current);
+      restorationFrame.current = requestAnimationFrame(() => {
+        if (protocol.current.lastPublication !== publication) return;
+        updateNodeInternals(next.nodes.map((node) => node.id));
+        restorationFrame.current = requestAnimationFrame(() => {
+          if (protocol.current.lastPublication !== publication) return;
+          setEdges(next.edges);
+          element.dataset.shinycapRestorationReady = "true";
+          element.dataset.shinycapRestoredNodeCount = String(next.nodes.length);
+          element.dataset.shinycapRestoredEdgeCount = String(next.edges.length);
+        });
+      });
       setSelectedEdgeId((current) => next.edges.some((edge) => edge.id === current) ? current : null);
     };
     window.Shiny?.addCustomMessageHandler?.("shinycapabilities:set-graph", onSetGraph);
     window.Shiny?.addCustomMessageHandler?.("shinycapabilities:v1:set-graph", onSetGraph);
-  }, [element.id, readOnly, value.capabilities]);
+    return () => cancelAnimationFrame(restorationFrame.current);
+  }, [element.id, readOnly, updateNodeInternals, value.capabilities]);
 
   useEffect(() => {
     const onSelectionAck = (message) => {
       if (message.id !== element.id) return;
       if (message.mutationId && message.mutationId !== protocol.current.pendingSelectionMutation) return;
       protocol.current.pendingSelectionMutation = null;
-      element.dataset.shinycapSelectedNodeId = message.nodeId || "";
+      const selectedNodeId = message.nodeId || "";
+      element.dataset.shinycapSelectedNodeId = selectedNodeId;
       element.dataset.shinycapSelectedCapabilityId = message.capabilityId || "";
       element.dataset.shinycapInspectorRevision = String(message.graphRevision ?? protocol.current.serverRevision);
+      setNodes((current) => current.map((node) => ({ ...node, selected: node.id === selectedNodeId })));
     };
     window.Shiny?.addCustomMessageHandler?.("shinycapabilities:v1:selection-ack", onSelectionAck);
   }, [element.id]);

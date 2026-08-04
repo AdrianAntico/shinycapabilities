@@ -20,6 +20,9 @@ const same = (a, b) => JSON.stringify(unique(a)) === JSON.stringify(unique(b));
 
 function SelectionInput({ host, model }) {
   const multiple = model.multiple !== false;
+  const choiceCount = (model.groups || []).reduce((total, group) => total + (group.options?.length || 0), 0);
+  const lifecycleState = model.loading ? "loading" : model.disabled ?
+    (choiceCount ? "disabled" : "blocked") : choiceCount ? "ready" : "empty";
   const [value, setValue] = useState(unique(model.value));
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -28,6 +31,16 @@ function SelectionInput({ host, model }) {
   const triggerRef = useRef(null), cleanupRef = useRef(null);
   useEffect(() => { setValue(unique(model.value)); }, [model.revision, JSON.stringify(model.value)]);
   useEffect(() => { host._selectionValue = value.slice(); }, [host, value]);
+  useLayoutEffect(() => {
+    host.dataset.selectionMounted = "true";
+    host.dataset.selectionState = lifecycleState;
+    host.dataset.selectionRevision = String(model.revision || "");
+    host.dataset.selectionChoiceCount = String(choiceCount);
+    host.dataset.selectionStaleCount = String(model.stale?.length || 0);
+    host.dataset.selectionDatasetId = String(model.schemaOwner?.dataset_id || "");
+    host.dataset.selectionDatasetRevision = String(model.schemaOwner?.dataset_revision || "");
+    return () => { host.dataset.selectionMounted = "false"; };
+  }, [choiceCount, host, lifecycleState, model.revision, model.schemaOwner, model.stale]);
 
   const selected = useMemo(() => new Set(value), [value]);
   const rows = useMemo(() => {
