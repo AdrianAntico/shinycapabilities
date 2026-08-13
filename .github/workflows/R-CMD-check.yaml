@@ -16,9 +16,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { os: windows-latest, r: release }
-          - { os: ubuntu-latest, r: release }
-          - { os: macos-latest, r: release }
+          - { os: windows-latest, r: '4.5.2' }
+          - { os: ubuntu-latest, r: '4.5.2' }
+          - { os: macos-latest, r: '4.5.2' }
     steps:
       - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-r@v2
