@@ -40,3 +40,14 @@ testthat::test_that("bundled Selection System has one lifecycle owner", {
   testthat::expect_match(source, "selectionDatasetRevision", fixed = TRUE)
   testthat::expect_false(grepl("virtualSelect", source, ignore.case = TRUE))
 })
+
+testthat::test_that("Selection System portal inherits the host theme contract", {
+  source <- paste(readLines(system.file("htmlwidgets", "src", "selection-system.jsx",
+    package = "shinycapabilities"), warn = FALSE), collapse = "\n")
+  css <- paste(readLines(system.file("htmlwidgets", "src", "selection-system.css",
+    package = "shinycapabilities"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(source, "portalTheme(host)", fixed = TRUE)
+  testthat::expect_match(source, "--sc-selection-${name}", fixed = TRUE)
+  testthat::expect_match(css, "--sc-selection-invalid", fixed = TRUE)
+  testthat::expect_match(css, ".sc-selection-trigger:focus-visible", fixed = TRUE)
+})

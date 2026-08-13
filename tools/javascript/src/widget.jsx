@@ -32,6 +32,8 @@ const INSERT_NODE_WIDTH = 260;
 const INSERT_NODE_HEIGHT = 150;
 const INSERT_NODE_GAP = 32;
 const INSERT_VIEWPORT_INSET = 36;
+const PORT_HANDLE_FIRST_OFFSET = 96;
+const PORT_HANDLE_PITCH = 30;
 const isElementTarget = (target) => Boolean(target && typeof target.closest === "function");
 const isEditableTarget = (target) => Boolean(
   isElementTarget(target) && target.closest("input, textarea, select, [contenteditable='true']")
@@ -46,7 +48,31 @@ const overlaps = (left, right) => !(
   left.y + left.height + INSERT_NODE_GAP <= right.y ||
   right.y + right.height + INSERT_NODE_GAP <= left.y
 );
-const nextInsertPosition = (requested, current, viewportWidth = null) => {
+const reservedOverlayRects = (container, flow) => {
+  if (!container) return [];
+  const overlays = [
+    ...container.querySelectorAll(".react-flow__panel"),
+    ...document.querySelectorAll("[data-shinycap-reserved-overlay]")
+  ];
+  return Array.from(new Set(overlays))
+    .filter((overlay) => {
+      const style = window.getComputedStyle(overlay);
+      const rect = overlay.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    })
+    .map((overlay) => {
+      const rect = overlay.getBoundingClientRect();
+      const topLeft = flow.screenToFlowPosition({ x: rect.left, y: rect.top });
+      const bottomRight = flow.screenToFlowPosition({ x: rect.right, y: rect.bottom });
+      return {
+        x: topLeft.x,
+        y: topLeft.y,
+        width: bottomRight.x - topLeft.x,
+        height: bottomRight.y - topLeft.y
+      };
+    });
+};
+const nextInsertPosition = (requested, current, viewportWidth = null, reserved = []) => {
   const anchor = current.length ? current[0].position : requested;
   const columns = Math.max(3, Math.floor(
     ((viewportWidth || INSERT_NODE_WIDTH * 3) - INSERT_VIEWPORT_INSET * 2 + INSERT_NODE_GAP) /
@@ -58,18 +84,23 @@ const nextInsertPosition = (requested, current, viewportWidth = null) => {
     width: Math.max(240, node.width || node.measured?.width || INSERT_NODE_WIDTH),
     height: Math.max(INSERT_NODE_HEIGHT, node.height || node.measured?.height || INSERT_NODE_HEIGHT)
   }));
-  for (let index = 0; index <= current.length; index += 1) {
+  const searchLimit = Math.max(16, current.length + reserved.length + columns * 2);
+  for (let index = 0; index < searchLimit; index += 1) {
     const candidate = {
       x: anchor.x + (index % columns) * (INSERT_NODE_WIDTH + INSERT_NODE_GAP),
       y: anchor.y + Math.floor(index / columns) * (INSERT_NODE_HEIGHT + INSERT_NODE_GAP),
       width: INSERT_NODE_WIDTH,
       height: INSERT_NODE_HEIGHT
     };
-    if (!occupied.some((rect) => overlaps(candidate, rect))) {
+    if (!occupied.some((rect) => overlaps(candidate, rect)) &&
+        !reserved.some((rect) => overlaps(candidate, rect))) {
       return { x: candidate.x, y: candidate.y };
     }
   }
-  return requested;
+  return {
+    x: anchor.x,
+    y: anchor.y + Math.ceil(searchLimit / columns) * (INSERT_NODE_HEIGHT + INSERT_NODE_GAP)
+  };
 };
 const friendlyPort = (name, port) =>
   port?.displayLabel || String(name).replaceAll("_", " ");
@@ -150,6 +181,9 @@ const CapabilityNode = memo(({ id, data, selected }) => (
     data-shinycap-node-id={id}
     data-shinycap-capability-id={data.capabilityId}
     data-testid={`shinycap-node-card-${id}`}
+    style={{ minHeight: Math.max(150, PORT_HANDLE_FIRST_OFFSET +
+      Math.max(Object.keys(data.inputs || {}).length, Object.keys(data.outputs || {}).length) *
+      PORT_HANDLE_PITCH) }}
     aria-label={`${data.displayName}, ${data.state || "unconfigured"}`}
   >
     {!data.readOnly && <NodeResizer
@@ -192,12 +226,12 @@ const CapabilityNode = memo(({ id, data, selected }) => (
               data-shinycap-node-id={id}
               data-shinycap-port-id={name}
               data-testid={`shinycap-handle-input-${id}-${name}`}
-              style={{ top: 82 + index * 22 }}
+              style={{ top: PORT_HANDLE_FIRST_OFFSET + index * PORT_HANDLE_PITCH }}
               aria-label={`Input ${name}, ${port.type}`}
               title={`Connect ${port.type} to ${friendlyPort(name, port)}`}
-              className={data.connectionSource ?
+              className={`nodrag nopan${data.connectionSource ?
                 (data.connectionSource.nodeId !== id && data.connectionSource.type === port.type
-                  ? "sc-handle-compatible" : "sc-handle-incompatible") : ""}
+                  ? " sc-handle-compatible" : " sc-handle-incompatible") : ""}`}
             />
             <span>{friendlyPort(name, port)}</span><code>{port.type}</code>
           </div>
@@ -215,7 +249,8 @@ const CapabilityNode = memo(({ id, data, selected }) => (
               data-shinycap-node-id={id}
               data-shinycap-port-id={name}
               data-testid={`shinycap-handle-output-${id}-${name}`}
-              style={{ top: 82 + index * 22 }}
+              className="nodrag nopan"
+              style={{ top: PORT_HANDLE_FIRST_OFFSET + index * PORT_HANDLE_PITCH }}
               aria-label={`Output ${name}, ${port.type}`}
               title={`${friendlyPort(name, port)} output: ${port.type}`}
             />
@@ -328,7 +363,7 @@ function Canvas({ element, value }) {
   const [pendingHydratedEdges, setPendingHydratedEdges] = useState(hydrated.edges);
   const restorationFrame = useRef(0);
   const [selectedEdgeId, setSelectedEdgeId] = useState(null);
-  const [pendingConnection, setPendingConnection] = useState(null);
+  const pendingConnection = useRef(null);
   const [connectionSource, setConnectionSource] = useState(null);
   const [connectionFeedback, setConnectionFeedback] = useState(null);
   const wrapper = useRef(null);
@@ -435,7 +470,7 @@ function Canvas({ element, value }) {
       const button = event.target.closest(".sc-widget-command");
       if (!button || button.dataset.target !== element.id) return;
       if (button.dataset.command === "fitView" || button.dataset.shinycapCommand === "fit-view") {
-        flow.fitView({ padding: 0.18, duration: 250 });
+        flow.fitView({ padding: 0.18, maxZoom: 1, duration: 250 });
       }
     };
     document.addEventListener("click", handler);
@@ -446,7 +481,7 @@ function Canvas({ element, value }) {
     const onCommand = (message) => {
       if (message.id !== element.id) return;
       if (message.command === "fit-view") {
-        flow.fitView({ padding: 0.18, duration: 250 });
+        flow.fitView({ padding: 0.18, maxZoom: 1, duration: 250 });
       }
     };
     window.Shiny?.addCustomMessageHandler?.("shinycapabilities:v1:command", onCommand);
@@ -458,6 +493,7 @@ function Canvas({ element, value }) {
       const capability = catalog.get(capabilityId);
       if (!capability || readOnly) return;
       const bounds = wrapper.current?.getBoundingClientRect();
+      const reserved = reservedOverlayRects(wrapper.current, flow);
       const requestedPosition = flow.screenToFlowPosition({
         x: (bounds?.left || 0) + (event.detail?.x || 200),
         y: (bounds?.top || 0) + (event.detail?.y || 160)
@@ -465,13 +501,17 @@ function Canvas({ element, value }) {
       setNodes((current) => {
         insertSequence.current += 1;
         const id = `${capabilityId.replace(/[^\w-]/g, "-")}-${Date.now()}-${insertSequence.current}`;
-        const position = nextInsertPosition(requestedPosition, current, bounds?.width);
+        const position = nextInsertPosition(requestedPosition, current, bounds?.width, reserved);
         const nextNode = hydrate({ nodes: [{
           id, capability_id: capabilityId, position, config: {}, state: "unconfigured"
         }], edges: [] }, value.capabilities || [], readOnly).nodes[0];
         const next = [...current, nextNode];
         emit(element, "capability_dropped", { nodeId: id, capabilityId }, serialize(next, edges));
-        window.requestAnimationFrame(() => flow.fitView({ nodes: next, padding: 0.28, maxZoom: 1, duration: 0 }));
+        window.requestAnimationFrame(() => flow.setCenter(
+          position.x + INSERT_NODE_WIDTH / 2,
+          position.y + INSERT_NODE_HEIGHT / 2,
+          { zoom: 1, duration: 0 }
+        ));
         return next;
       });
     };
@@ -486,26 +526,28 @@ function Canvas({ element, value }) {
   useEffect(() => {
     if (!window.Shiny?.addCustomMessageHandler) return;
     const onConnectionResult = (message) => {
-      if (message.id !== element.id || !pendingConnection) return;
+      if (message.id !== element.id || !pendingConnection.current) return;
+      const edge = pendingConnection.current;
+      if (message.edge?.id && message.edge.id !== edge.id) return;
       if (message.result?.valid) {
         setEdges((current) => {
-          const next = addEdge({ ...pendingConnection, type: "accessible" }, current);
-          emit(element, "connection_accepted", { edge: pendingConnection }, serialize(nodes, next));
+          const next = addEdge({ ...edge, type: "accessible" }, current);
+          emit(element, "connection_accepted", { edge }, serialize(nodes, next));
           return next;
         });
         setConnectionFeedback({ valid: true, message: message.result.message });
       } else {
         emit(element, "connection_rejected", {
-          edge: pendingConnection,
+          edge,
           finding: message.result
         }, graph());
         setConnectionFeedback({ valid: false, message: message.result?.message || "Connection rejected." });
       }
-      setPendingConnection(null);
+      pendingConnection.current = null;
     };
     window.Shiny.addCustomMessageHandler("shinycapabilities:connection-result", onConnectionResult);
     window.Shiny.addCustomMessageHandler("shinycapabilities:v1:connection-result", onConnectionResult);
-  }, [element, graph, nodes, pendingConnection]);
+  }, [element, graph, nodes]);
 
   const onNodesChange = useCallback((changes) => {
     if (readOnly) return;
@@ -559,7 +601,7 @@ function Canvas({ element, value }) {
       ...connection,
       id: `${connection.source}__${connection.sourceHandle}__${connection.target}__${connection.targetHandle}`
     };
-    setPendingConnection(edge);
+    pendingConnection.current = edge;
     setConnectionFeedback({ valid: null, message: "Checking connection with the R workflow authority…" });
     emit(element, "connection_proposed", { edge }, graph());
   }, [element, graph, readOnly]);
@@ -590,6 +632,9 @@ function Canvas({ element, value }) {
 
   const presentedNodes = useMemo(() => nodes.map((node) => ({
     ...node,
+    className: connectionSource && connectionSource.nodeId !== node.id &&
+      Object.values(node.data?.inputs || {}).some((port) => port.type === connectionSource.type)
+      ? "sc-node-connection-target" : undefined,
     data: {
       ...node.data,
       connectionSource,
@@ -607,13 +652,15 @@ function Canvas({ element, value }) {
       : event.dataTransfer.getData(LEGACY_CAPABILITY_MIME);
     const capability = catalog.get(capabilityId);
     if (!capability) return;
-    const position = flow.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+    const requestedPosition = flow.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+    const bounds = wrapper.current?.getBoundingClientRect();
+    const reserved = reservedOverlayRects(wrapper.current, flow);
     const ordinal = nodes.filter((node) => node.data.capabilityId === capabilityId).length + 1;
     const id = `${capabilityId.replace(/[^a-z0-9]+/gi, "_")}_${ordinal}`;
     const node = {
       id,
       type: "capability",
-      position,
+      position: nextInsertPosition(requestedPosition, nodes, bounds?.width, reserved),
       width: 260,
       height: 138,
       data: {

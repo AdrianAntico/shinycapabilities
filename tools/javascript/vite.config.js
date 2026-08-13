@@ -12,6 +12,10 @@ const publishWidgetSource = {
       resolve(import.meta.dirname, "src/widget.jsx"),
       resolve(target, "widget.jsx")
     );
+    copyFileSync(
+      resolve(import.meta.dirname, "src/widget.css"),
+      resolve(target, "widget.css")
+    );
   }
 };
 

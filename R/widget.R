@@ -39,7 +39,7 @@ capability_canvas <- function(
     element_id = NULL, graph_revision = 0L) {
   htmlwidgets::createWidget(
     name = "capability_canvas",
-    x = list(
+    x = json_object_payload(list(
       capabilities = registry_payload(registry),
       graph = normalize_workflow_graph(graph),
       graphRevision = as.integer(graph_revision),
@@ -47,7 +47,7 @@ capability_canvas <- function(
         readOnly = isTRUE(read_only), minimap = isTRUE(minimap),
         bridgeVersion = "1.0.0"
       )
-    ),
+    )),
     width = width,
     height = height,
     package = "shinycapabilities",

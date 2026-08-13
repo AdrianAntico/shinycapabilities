@@ -30,7 +30,9 @@ register_capability(
   resource_hints = list(),
   icon = NULL,
   style = list(),
-  presentation = list()
+  presentation = list(),
+  execution_contract = list(),
+  knowledge = list()
 )
 }
 \arguments{
@@ -79,6 +81,10 @@ register_capability(
 \item{icon, style}{Legacy presentation metadata.}
 
 \item{presentation}{Optional host-supplied, domain-neutral presentation metadata.}
+
+\item{execution_contract}{Optional capability-owned planned actions and deliverables.}
+
+\item{knowledge}{Optional product-facing purpose, usage, limitation, and related-capability metadata.}
 }
 \description{
 Register a capability definition

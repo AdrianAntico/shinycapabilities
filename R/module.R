@@ -143,6 +143,10 @@ config_control <- function(namespace, name, definition, value = NULL) {
   )
 }
 
+config_input_key <- function(node_id, name) {
+  paste0("node__", node_id, "__config__", name)
+}
+
 #' Capability workflow module UI
 #' @param id Module identifier.
 #' @param registry Capability registry.
@@ -255,6 +259,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         graphRevision = shiny::isolate(graph_revision()), ackMutationId = ack_mutation_id,
         reason = reason
       )
+      payload <- json_object_payload(payload)
       session$sendCustomMessage("shinycapabilities:set-graph", payload)
       session$sendCustomMessage("shinycapabilities:v1:set-graph", payload)
       invisible(payload)
@@ -302,18 +307,28 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     shiny::observe({
       node <- selected_node()
       if (is.null(node)) return()
+      if (!identical(input$inspector_owner %||% "", node$id)) return()
       capability <- capability_registry_get(registry, node$capability_id)
       values <- setNames(lapply(names(capability$config), function(name) {
-        input[[paste0("config__", name)]]
+        input[[config_input_key(node$id, name)]]
       }), names(capability$config))
       present <- !vapply(values, is.null, logical(1))
       if (!any(present)) return()
       shiny::isolate({
         drafts <- config_drafts()
         node_draft <- drafts[[node$id]] %||% list()
-        node_draft[names(values)[present]] <- values[present]
+        had_draft <- length(node_draft) > 0L
+        changed <- names(values)[present][!vapply(names(values)[present], function(name) {
+          identical(node_draft[[name]] %||% node$config[[name]], values[[name]])
+        }, logical(1))]
+        if (!length(changed)) return()
+        node_draft[changed] <- values[changed]
         drafts[[node$id]] <- node_draft
         config_drafts(drafts)
+        refresh <- vapply(changed, function(name) {
+          isTRUE(capability$config[[name]]$metadata$refresh_dependents)
+        }, logical(1))
+        if (!had_draft || any(refresh)) inspector_revision(inspector_revision() + 1L)
       })
     })
 
@@ -337,6 +352,9 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       }
       capability <- capability_registry_get(registry, node$capability_id)
       draft <- shiny::isolate(config_drafts())[[node$id]] %||% list()
+      render_node <- node
+      render_node$config <- utils::modifyList(node$config %||% list(), draft)
+      node_namespace <- function(id) session$ns(paste0("node__", node$id, "__", id))
       custom <- if (is.function(capability$custom_ui)) capability$custom_ui(session$ns, node) else NULL
       execution_error <- cache()[[node$id]]$error %||% NULL
       execution_error_message <- if (is.list(execution_error)) {
@@ -344,11 +362,33 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       } else {
         paste(execution_error %||% "Unknown failure", collapse = " ")
       }
-      htmltools::tags$div(`data-shinycap-node-id` = node$id,
+      config_action <- function(input_id, label, class = NULL) {
+        button <- shiny::actionButton(session$ns(input_id), label, class = class)
+        if (!length(draft)) button <- htmltools::tagAppendAttributes(
+          button, disabled = "disabled", `aria-disabled` = "true")
+        button
+      }
+      # Configuration inputs intentionally reuse stable Shiny input names so
+      # capability observers can remain generic. Give the inspector subtree a
+      # node-specific DOM identity so htmlOutput does not preserve the prior
+      # node's same-ID controls when selection changes.
+      htmltools::tags$div(id = session$ns(paste0("inspector_node__", node$id)),
+        `data-shinycap-node-id` = node$id,
         `data-shinycap-capability-id` = node$capability_id,
         `data-shinycap-graph-revision` = graph_revision(),
+        `data-shinycap-config-dirty` = if (length(draft)) "true" else "false",
+        htmltools::tags$script(htmltools::HTML(sprintf(
+          "Shiny.setInputValue(%s,%s,{priority:'event'});",
+          jsonlite::toJSON(session$ns("inspector_owner"), auto_unbox = TRUE),
+          jsonlite::toJSON(node$id, auto_unbox = TRUE)))),
         htmltools::tags$h2(capability$display_name),
         htmltools::tags$p(capability$description),
+        htmltools::tags$div(
+          class = "sc-config-actions sc-inspector-sticky-actions",
+          `data-shinycap-config-actions` = "true",
+          config_action("save_config", "Apply configuration", "btn-primary"),
+          config_action("discard_config", "Discard changes")
+        ),
         htmltools::tags$dl(class = "sc-node-facts",
           htmltools::tags$dt("State"), htmltools::tags$dd(node$state),
           htmltools::tags$dt("Profile"), htmltools::tags$dd(capability$execution_profile),
@@ -376,15 +416,12 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
           definition <- capability$config[[name]]
           value <- draft[[name]] %||% node$config[[name]]
           control <- if (is.function(config_control_renderer)) {
-            config_control_renderer(session$ns, name, definition, value, node, capability)
+            config_control_renderer(node_namespace, name, definition, value, render_node, capability)
           } else NULL
-          if (is.null(control)) control <- config_control(session$ns, name, definition, value)
+          if (is.null(control)) control <- config_control(node_namespace, name, definition, value)
           htmltools::tags$div(`data-shinycap-config-name` = name, control)
         }),
         custom,
-        htmltools::tags$div(class = "sc-config-actions",
-          shiny::actionButton(session$ns("save_config"), "Apply configuration", class = "btn-primary"),
-          shiny::actionButton(session$ns("discard_config"), "Discard changes")),
         htmltools::tags$hr(),
         if (identical(cache()[[node$id]]$status %||% NULL, "failed")) {
           htmltools::tags$div(
@@ -393,8 +430,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
             htmltools::tags$p(execution_error_message)
           )
         },
-        htmltools::tags$h3("Produced outputs"),
-        htmltools::tags$pre(stable_json(cache()[[node$id]]$summary %||% list()))
+        NULL
       )
     })
 
@@ -403,9 +439,13 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       if (is.null(node)) return()
       capability <- capability_registry_get(registry, node$capability_id)
       draft <- config_drafts()[[node$id]] %||% list()
-      config <- setNames(lapply(names(capability$config), function(name) {
-        draft[[name]] %||% input[[paste0("config__", name)]] %||% node$config[[name]]
+      authored_config <- setNames(lapply(names(capability$config), function(name) {
+        draft[[name]] %||% input[[config_input_key(node$id, name)]] %||% node$config[[name]]
       }), names(capability$config))
+      # Capability inspectors own only the fields declared by the capability.
+      # Preserve host-owned configuration (for example durable resource bindings)
+      # when an ordinary inspector Apply republishes the authored fields.
+      config <- utils::modifyList(node$config %||% list(), authored_config)
       next_graph <- graph()
       next_graph$nodes <- lapply(next_graph$nodes, function(candidate) {
         if (!identical(candidate$id, node$id)) return(candidate)
@@ -482,6 +522,13 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     }
     shiny::observe(poll_runtime())
     run_plan <- function(plan) {
+      if (length(shiny::isolate(config_drafts()))) {
+        shiny::showNotification(
+          "Apply or discard pending configuration changes before running the workflow.",
+          type = "warning"
+        )
+        return(invisible(FALSE))
+      }
       last_plan(plan)
       if (!isTRUE(plan$valid)) return()
       if (!is.null(active_runtime())) return()

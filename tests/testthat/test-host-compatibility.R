@@ -190,6 +190,16 @@ testthat::test_that("versioned and legacy browser bridge aliases are bundled", {
   )) testthat::expect_match(source, name, fixed = TRUE)
 })
 
+testthat::test_that("connection acknowledgements use an immediately available pending edge", {
+  source <- paste(readLines(system.file("htmlwidgets", "src", "widget.jsx",
+    package = "shinycapabilities"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(source, "pendingConnection.current = edge", fixed = TRUE)
+  testthat::expect_match(source,
+    "if (message.id !== element.id || !pendingConnection.current) return;",
+    fixed = TRUE)
+  testthat::expect_false(grepl("setPendingConnection(edge)", source, fixed = TRUE))
+})
+
 testthat::test_that("core contains no host-domain compatibility vocabulary", {
   roots <- c(
     "R", file.path("inst", "htmlwidgets"), file.path("inst", "examples"),

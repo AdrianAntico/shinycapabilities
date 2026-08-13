@@ -41,6 +41,28 @@ normalize_capability_presentation <- function(value = list()) {
   result
 }
 
+normalize_capability_knowledge <- function(value = list(), description = "") {
+  value <- value %||% list()
+  allowed <- c("purpose", "use_when", "limitations", "related_capabilities")
+  unknown <- setdiff(names(value), allowed)
+  if (length(unknown)) {
+    stop("Unknown capability knowledge metadata: ", paste(unknown, collapse = ", "),
+      call. = FALSE)
+  }
+  public_description <- gsub(
+    "AutoQuant|AutoPlots|AutoNLP|shinycapabilities|AnalyticsShinyApp",
+    "governed", description, ignore.case = TRUE
+  )
+  public_description <- gsub("\\s+in R([.]|$)", ".", public_description)
+  defaults <- list(
+    purpose = public_description,
+    use_when = NULL,
+    limitations = NULL,
+    related_capabilities = character()
+  )
+  utils::modifyList(defaults, value, keep.null = TRUE)
+}
+
 #' Define a schema-driven configuration field
 #' @param type Control type.
 #' @param label Human-readable field label.
@@ -73,6 +95,30 @@ capability_registry <- function() {
   structure(new.env(parent = emptyenv()), class = "shinycap_registry")
 }
 
+# Normalize a capability execution contract.
+normalize_execution_contract <- function(value = list()) {
+  value <- value %||% list()
+  if (!is.list(value)) stop("Execution contract must be a list.", call. = FALSE)
+  normalize_rows <- function(rows, kind) {
+    rows <- rows %||% list()
+    if (!is.list(rows)) stop(kind, " descriptors must be a list.", call. = FALSE)
+    lapply(seq_along(rows), function(index) {
+      row <- rows[[index]]
+      if (!is.list(row)) stop(kind, " descriptors must be lists.", call. = FALSE)
+      id <- as.character(row$id %||% paste0(tolower(kind), "_", index))
+      label <- as.character(row$label %||% "")
+      if (length(id) != 1L || !nzchar(id) || length(label) != 1L || !nzchar(label)) {
+        stop(kind, " descriptors require stable ids and labels.", call. = FALSE)
+      }
+      c(list(id = id, label = label), row[setdiff(names(row), c("id", "label"))])
+    })
+  }
+  list(
+    actions = normalize_rows(value$actions, "Action"),
+    deliverables = normalize_rows(value$deliverables, "Deliverable")
+  )
+}
+
 #' Register a capability definition
 #' @param id Stable capability identifier.
 #' @param version Semantic capability version.
@@ -97,6 +143,8 @@ capability_registry <- function() {
 #' @param resource_hints Domain-neutral resource metadata.
 #' @param icon,style Legacy presentation metadata.
 #' @param presentation Optional host-supplied, domain-neutral presentation metadata.
+#' @param execution_contract Optional capability-owned planned actions and deliverables.
+#' @param knowledge Optional product-facing purpose, usage, limitation, and related-capability metadata.
 #' @export
 register_capability <- function(
     id, version, display_name, description = "", category = "Other",
@@ -109,7 +157,7 @@ register_capability <- function(
     timeout = 300, retry_policy = c("none", "explicit"),
     maximum_concurrency = NULL,
     resource_hints = list(), icon = NULL, style = list(),
-    presentation = list()) {
+    presentation = list(), execution_contract = list(), knowledge = list()) {
   cache_policy <- match.arg(cache_policy)
   execution_profile <- match.arg(execution_profile)
   progress_support <- match.arg(progress_support)
@@ -148,7 +196,9 @@ register_capability <- function(
     retry_policy = retry_policy,
     maximum_concurrency = maximum_concurrency,
     resource_hints = resource_hints, icon = icon, style = style,
-    presentation = normalize_capability_presentation(presentation)
+    presentation = normalize_capability_presentation(presentation),
+    execution_contract = normalize_execution_contract(execution_contract),
+    knowledge = normalize_capability_knowledge(knowledge, description)
   )
   class(definition) <- "shinycap_capability"
   definition

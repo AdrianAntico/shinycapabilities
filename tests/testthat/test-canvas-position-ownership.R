@@ -17,12 +17,35 @@ testthat::test_that("client insertion selects deterministic non-overlapping posi
 
   testthat::expect_match(source, "const nextInsertPosition =", fixed = TRUE)
   testthat::expect_match(source, "const INSERT_VIEWPORT_INSET = 36;", fixed = TRUE)
-  testthat::expect_match(source, "const position = nextInsertPosition(requestedPosition, current, bounds?.width);", fixed = TRUE)
+  testthat::expect_match(source, "const reservedOverlayRects =", fixed = TRUE)
+  testthat::expect_match(source, 'container.querySelectorAll(".react-flow__panel")', fixed = TRUE)
+  testthat::expect_match(source, 'document.querySelectorAll("[data-shinycap-reserved-overlay]")', fixed = TRUE)
+  testthat::expect_match(source, "flow.screenToFlowPosition", fixed = TRUE)
+  testthat::expect_match(source, "const position = nextInsertPosition(requestedPosition, current, bounds?.width, reserved);", fixed = TRUE)
   testthat::expect_match(source, "const columns = Math.max(3", fixed = TRUE)
   testthat::expect_match(source, "anchor.x + (index % columns)", fixed = TRUE)
   testthat::expect_match(source, "INSERT_NODE_WIDTH + INSERT_NODE_GAP", fixed = TRUE)
   testthat::expect_match(source, "serialize(next, edges)", fixed = TRUE)
-  testthat::expect_match(source, "flow.fitView({ nodes: next, padding: 0.28, maxZoom: 1", fixed = TRUE)
+  testthat::expect_match(source, "!reserved.some((rect) => overlaps(candidate, rect))", fixed = TRUE)
+  testthat::expect_match(source, "current.length + reserved.length + columns * 2", fixed = TRUE)
+  testthat::expect_match(source, "index < searchLimit", fixed = TRUE)
+  testthat::expect_match(source, "flow.setCenter(", fixed = TRUE)
+  testthat::expect_match(source, "position.x + INSERT_NODE_WIDTH / 2", fixed = TRUE)
+  testthat::expect_match(source, "position.y + INSERT_NODE_HEIGHT / 2", fixed = TRUE)
+})
+
+testthat::test_that("manual fit preserves a readable workstation scale", {
+  source <- paste(readLines(
+    widget_source_contract_path(),
+    warn = FALSE
+  ), collapse = "\n")
+
+  fit_contract <- "flow.fitView({ padding: 0.18, maxZoom: 1, duration: 250 });"
+  testthat::expect_equal(
+    length(gregexpr(fit_contract, source, fixed = TRUE)[[1L]]),
+    2L,
+    info = "Both the visible Fit command and host command must cap automatic zoom."
+  )
 })
 
 testthat::test_that("restored edges wait for initialized React Flow nodes", {
@@ -167,4 +190,25 @@ testthat::test_that("edge deletion is explicit, selected, and input-focus safe",
   testthat::expect_match(source, "const AccessibleEdge = memo", fixed = TRUE)
   testthat::expect_match(source, "interactionWidth={20}", fixed = TRUE)
   testthat::expect_match(source, "edgeTypes={EDGE_TYPES}", fixed = TRUE)
+})
+
+testthat::test_that("semantic multi-input handles have distinct stable hit regions", {
+  source <- paste(readLines(widget_source_contract_path(), warn = FALSE), collapse = "\n")
+  css <- paste(readLines(system.file("htmlwidgets", "src", "widget.css",
+    package = "shinycapabilities"), warn = FALSE), collapse = "\n")
+
+  testthat::expect_match(source, "PORT_HANDLE_FIRST_OFFSET = 96", fixed = TRUE)
+  testthat::expect_match(source, "PORT_HANDLE_PITCH = 30", fixed = TRUE)
+  testthat::expect_match(source,
+    "data-testid={`shinycap-handle-input-${id}-${name}`}", fixed = TRUE)
+  testthat::expect_match(source,
+    "top: PORT_HANDLE_FIRST_OFFSET + index * PORT_HANDLE_PITCH", fixed = TRUE)
+  testthat::expect_match(css, "min-height: 30px", fixed = TRUE)
+  testthat::expect_match(css, "box-sizing: border-box", fixed = TRUE)
+  testthat::expect_match(source, 'className="nodrag nopan"', fixed = TRUE)
+  testthat::expect_match(source, '"sc-node-connection-target"', fixed = TRUE)
+  testthat::expect_match(css, ".react-flow__node.sc-node-connection-target", fixed = TRUE)
+  testthat::expect_match(css, "z-index: 1000 !important", fixed = TRUE)
+  testthat::expect_match(css, ".sc-connection-feedback", fixed = TRUE)
+  testthat::expect_match(css, "pointer-events: none", fixed = TRUE)
 })
