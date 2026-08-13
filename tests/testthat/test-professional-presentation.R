@@ -27,3 +27,19 @@ testthat::test_that("optional examples can use one clear palette presentation", 
   testthat::expect_false(grepl("data-palette-density=", html, fixed = TRUE))
   testthat::expect_true(grepl("data-shinycap-density=\"comfortable\"", html, fixed = TRUE))
 })
+
+testthat::test_that("semantic palette clicks publish one insertion event", {
+  registry <- capability_registry()
+  capability_registry_add(registry, register_capability(
+    "palette.test", "1.0.0", "Palette test"
+  ))
+  html <- as.character(capability_canvas_ui(
+    "studio", registry, height = "100%", toolbar = FALSE
+  ))
+
+  testthat::expect_true(grepl("paletteClickReady", html, fixed = TRUE))
+  testthat::expect_true(grepl("event.stopImmediatePropagation();insert(item)",
+    html, fixed = TRUE))
+  testthat::expect_true(grepl("item?.tagName==='BUTTON'&&event.key==='Enter'",
+    html, fixed = TRUE))
+})
