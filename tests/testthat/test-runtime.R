@@ -89,6 +89,42 @@ test_that("independent branches run concurrently and join after success", {
   )))
 })
 
+test_that("admission establishes real worker ownership before reporting active", {
+  registry <- runtime_test_registry(delay = 0.2)
+  graph <- runtime_test_graph()
+  runtime <- workflow_runtime(
+    registry, graph, plan_workflow(registry, graph), max_background = 2
+  )
+  admitted <- admit_workflow_runtime(runtime)
+  expect_true(admitted$active)
+  expect_false(admitted$terminal)
+  expect_gt(admitted$snapshot$active_jobs, 0L)
+  result <- run_workflow_runtime(runtime)
+  expect_true(result$complete)
+  expect_identical(result$active_jobs, 0L)
+})
+
+test_that("admission terminalizes stalled dispatch without phantom ownership", {
+  registry <- runtime_test_registry(delay = 0.1)
+  graph <- runtime_test_graph()
+  runtime <- workflow_runtime(registry, graph, plan_workflow(registry, graph))
+  runtime$limits$background_r <- 0L
+  admitted <- admit_workflow_runtime(runtime)
+  expect_false(admitted$active)
+  expect_true(admitted$terminal)
+  expect_identical(admitted$state, "failed")
+  expect_identical(admitted$snapshot$active_jobs, 0L)
+  failures <- Filter(function(item) {
+    identical(item$failure$type %||% "", "dispatch_not_established")
+  }, admitted$snapshot$lifecycle)
+  expect_gt(length(failures), 0L)
+
+  retry <- workflow_runtime(registry, graph, plan_workflow(registry, graph))
+  retry_admitted <- admit_workflow_runtime(retry)
+  expect_true(retry_admitted$active)
+  cleanup_workflow_runtime(retry)
+})
+
 test_that("profile concurrency limits are enforced", {
   registry <- runtime_test_registry(delay = 0.4)
   graph <- runtime_test_graph()

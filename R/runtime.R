@@ -393,6 +393,55 @@ tick_workflow_runtime <- function(runtime) {
   invisible(runtime)
 }
 
+#' Admit a workflow runtime to canonical execution
+#'
+#' Advances the runtime through bounded inline prerequisites until it either
+#' owns a background worker or reaches a terminal state. A runtime that cannot
+#' establish either condition is failed explicitly rather than being retained
+#' as an orphaned active run.
+#' @param runtime Runtime returned by `workflow_runtime()`.
+#' @param maximum_ticks Maximum admission ticks before progress is considered
+#'   stalled. Defaults to the number of planned steps plus one.
+#' @return A list containing `active`, `terminal`, `state`, and `snapshot`.
+#' @export
+admit_workflow_runtime <- function(runtime, maximum_ticks = NULL) {
+  stopifnot(inherits(runtime, "shinycap_runtime"))
+  maximum_ticks <- maximum_ticks %||% (length(runtime$order) + 1L)
+  maximum_ticks <- max(1L, as.integer(maximum_ticks))
+
+  for (index in seq_len(maximum_ticks)) {
+    before <- vapply(runtime$lifecycle, `[[`, character(1), "state")
+    tick_workflow_runtime(runtime)
+    snapshot <- workflow_runtime_snapshot(runtime)
+    if (isTRUE(snapshot$complete)) {
+      return(list(active = FALSE, terminal = TRUE,
+        state = if (any(vapply(snapshot$lifecycle, function(item)
+          item$state %in% c("failed", "blocked", "cancelled"), logical(1))))
+            "failed" else "completed",
+        snapshot = snapshot))
+    }
+    if (snapshot$active_jobs > 0L) {
+      return(list(active = TRUE, terminal = FALSE, state = "running",
+        snapshot = snapshot))
+    }
+    after <- vapply(runtime$lifecycle, `[[`, character(1), "state")
+    if (identical(before, after)) break
+  }
+
+  unfinished <- names(Filter(function(item) {
+    item$state %in% c("pending", "queued", "running", "cancelling")
+  }, runtime$lifecycle))
+  for (node_id in unfinished) {
+    runtime_finalize_failure(runtime, node_id, "dispatch_not_established",
+      "Canonical execution accepted the node but did not establish worker ownership.",
+      retryable = TRUE)
+  }
+  runtime_block_unrunnable(runtime)
+  snapshot <- workflow_runtime_snapshot(runtime)
+  list(active = FALSE, terminal = TRUE, state = "failed",
+    snapshot = snapshot)
+}
+
 #' Inspect serializable runtime state
 #' @param runtime Runtime returned by `workflow_runtime()`.
 #' @export
