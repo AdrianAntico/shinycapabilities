@@ -84,6 +84,10 @@ function SelectionInput({ host, model }) {
     const normalized = multiple ? unique(next) : unique(next).slice(0, 1);
     setValue(normalized); host._selectionValue = normalized.slice(); metrics.publications++;
     host.dispatchEvent(new CustomEvent("selection:change", { detail: normalized }));
+    window.Shiny?.setInputValue?.(`${host.id}_change`, {
+      value: normalized,
+      nonce: `${Date.now()}-${Math.random()}`
+    }, { priority: "event" });
   };
   const choose = row => {
     if (!row || row.kind !== "option" || row.disabled) return;

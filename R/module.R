@@ -147,6 +147,15 @@ config_input_key <- function(node_id, name) {
   paste0("node__", node_id, "__config__", name)
 }
 
+config_input_value <- function(input, node_id, name) {
+  key <- config_input_key(node_id, name)
+  change <- input[[paste0(key, "_change")]]
+  if (is.list(change) && !is.null(change$nonce)) {
+    return(as.character(unlist(change$value %||% list(), use.names = FALSE)))
+  }
+  input[[key]]
+}
+
 #' Capability workflow module UI
 #' @param id Module identifier.
 #' @param registry Capability registry.
@@ -224,12 +233,8 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE,
       )
     ),
     htmltools::tags$script(htmltools::HTML(sprintf(
-      "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"],.sc-workbench');if(!root)return;const search=root.querySelector('.sc-palette-search');const enabled=%s;const key='shinycapabilities.paletteDensity';const setDensity=function(value){root.dataset.paletteDensity=value;root.dataset.shinycapDensity=value;if(enabled)sessionStorage.setItem(key,value);root.querySelectorAll('[data-palette-density]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.paletteDensity===value));});};setDensity(enabled?(sessionStorage.getItem(key)||'compact'):'comfortable');const insert=function(item){const canvas=document.getElementById(item.dataset.canvasId);if(!canvas)return;const rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new CustomEvent('shinycapabilities:v1:insert',{bubbles:true,detail:{bridgeVersion:'1.0.0',capabilityId:item.dataset.capabilityId,x:rect.width/2,y:rect.height/2}}));};search?.addEventListener('input',function(){const term=this.value.trim().toLowerCase();root.querySelectorAll('.sc-palette-item').forEach(function(item){item.hidden=term&&!item.dataset.search.includes(term);});root.querySelectorAll('.sc-palette-category').forEach(function(group){const match=!!group.querySelector('.sc-palette-item:not([hidden])');group.hidden=!match;if(term&&match)group.open=true;});});root.addEventListener('click',function(e){if(!e.target||typeof e.target.closest!=='function')return;const density=e.target.closest('[data-palette-density]');if(density)setDensity(density.dataset.paletteDensity);});root.addEventListener('keydown',function(e){if(!e.target||typeof e.target.closest!=='function')return;const item=e.target.closest('.sc-palette-item');if(item&&e.key==='Enter'){e.preventDefault();insert(item);}});})();",
+      "(function(){const owner='%s';const enabled=%s;const key='shinycapabilities.paletteDensity';const selector='[data-shinycap-part=\"workbench\"],.sc-workbench';const setDensity=function(root,value,persist){if(!root)return;root.dataset.paletteDensity=value;root.dataset.shinycapDensity=value;if(persist)sessionStorage.setItem(key,value);root.querySelectorAll('.sc-palette-density [data-palette-density]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.paletteDensity===value));});};const commandId=function(){return globalThis.crypto?.randomUUID?.()||('palette-'+Date.now()+'-'+Math.random().toString(16).slice(2));};const bind=function(root){if(!root||window.__shinycapPaletteDispatcher.roots.has(root))return;window.__shinycapPaletteDispatcher.roots.add(root);setDensity(root,enabled?(sessionStorage.getItem(key)||'compact'):'comfortable',false);root.addEventListener('input',function(event){if(!(event.target instanceof Element)||!event.target.matches('.sc-palette-search'))return;const term=event.target.value.trim().toLowerCase();root.querySelectorAll('.sc-palette-item').forEach(function(item){item.hidden=term&&!item.dataset.search.includes(term);});root.querySelectorAll('.sc-palette-category').forEach(function(group){const match=!!group.querySelector('.sc-palette-item:not([hidden])');group.hidden=!match;if(term&&match)group.open=true;});},true);root.addEventListener('click',function(event){if(!(event.target instanceof Element))return;const density=event.target.closest('.sc-palette-density [data-palette-density]');if(density){setDensity(root,density.dataset.paletteDensity,true);return;}const item=event.target.closest('.sc-palette-item');if(!item)return;const canvas=document.getElementById(item.dataset.canvasId);if(!canvas)return;event.stopImmediatePropagation();const rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new CustomEvent('shinycapabilities:v1:insert',{bubbles:true,detail:{bridgeVersion:'1.0.0',commandId:commandId(),capabilityId:item.dataset.capabilityId,x:rect.width/2,y:rect.height/2}}));},true);};if(!window.__shinycapPaletteDispatcher){const dispatcher={version:'1.0.0',roots:new WeakSet()};dispatcher.observer=new MutationObserver(function(){document.querySelectorAll(selector).forEach(bind);});window.__shinycapPaletteDispatcher=dispatcher;dispatcher.observer.observe(document.documentElement,{childList:true,subtree:true});}document.querySelectorAll(selector).forEach(bind);})();",
       ns("palette_search"), if (isTRUE(palette_density_controls)) "true" else "false"
-    ))),
-    htmltools::tags$script(htmltools::HTML(sprintf(
-      "(function(){const root=document.getElementById('%s')?.closest('[data-shinycap-part=\"workbench\"],.sc-workbench');if(!root||root.dataset.paletteClickReady)return;root.dataset.paletteClickReady='true';const insert=function(item){const canvas=document.getElementById(item.dataset.canvasId);if(!canvas)return;const rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new CustomEvent('shinycapabilities:v1:insert',{bubbles:true,detail:{bridgeVersion:'1.0.0',capabilityId:item.dataset.capabilityId,x:rect.width/2,y:rect.height/2}}));};root.addEventListener('keydown',function(event){if(!(event.target instanceof Element))return;const item=event.target.closest('.sc-palette-item');if(item?.tagName==='BUTTON'&&event.key==='Enter')event.stopImmediatePropagation();},true);root.addEventListener('click',function(event){if(!(event.target instanceof Element))return;const item=event.target.closest('.sc-palette-item');if(!item)return;event.stopImmediatePropagation();insert(item);},true);})();",
-      ns("palette_search")
     )))
   )
 }
@@ -314,7 +319,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       if (!identical(input$inspector_owner %||% "", node$id)) return()
       capability <- capability_registry_get(registry, node$capability_id)
       values <- setNames(lapply(names(capability$config), function(name) {
-        input[[config_input_key(node$id, name)]]
+        config_input_value(input, node$id, name)
       }), names(capability$config))
       present <- !vapply(values, is.null, logical(1))
       if (!any(present)) return()
@@ -444,7 +449,10 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       capability <- capability_registry_get(registry, node$capability_id)
       draft <- config_drafts()[[node$id]] %||% list()
       authored_config <- setNames(lapply(names(capability$config), function(name) {
-        draft[[name]] %||% input[[config_input_key(node$id, name)]] %||% node$config[[name]]
+        if (!is.null(draft[[name]])) return(draft[[name]])
+        input_value <- config_input_value(input, node$id, name)
+        if (!is.null(input_value)) return(input_value)
+        node$config[[name]]
       }), names(capability$config))
       # Capability inspectors own only the fields declared by the capability.
       # Preserve host-owned configuration (for example durable resource bindings)

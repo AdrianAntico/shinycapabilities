@@ -369,6 +369,7 @@ function Canvas({ element, value }) {
   const wrapper = useRef(null);
   const selectedEdgeElement = useRef(null);
   const insertSequence = useRef(0);
+  const processedInsertCommands = useRef(new Set());
   const protocol = useRef(null);
   if (!protocol.current) {
     protocol.current = {
@@ -490,8 +491,16 @@ function Canvas({ element, value }) {
   useEffect(() => {
     const insert = (event) => {
       const capabilityId = event.detail?.capabilityId;
+      const commandId = event.detail?.commandId || null;
       const capability = catalog.get(capabilityId);
       if (!capability || readOnly) return;
+      if (commandId && processedInsertCommands.current.has(commandId)) return;
+      if (commandId) {
+        processedInsertCommands.current.add(commandId);
+        if (processedInsertCommands.current.size > 512) {
+          processedInsertCommands.current.delete(processedInsertCommands.current.values().next().value);
+        }
+      }
       const bounds = wrapper.current?.getBoundingClientRect();
       const reserved = reservedOverlayRects(wrapper.current, flow);
       const requestedPosition = flow.screenToFlowPosition({
@@ -506,7 +515,7 @@ function Canvas({ element, value }) {
           id, capability_id: capabilityId, position, config: {}, state: "unconfigured"
         }], edges: [] }, value.capabilities || [], readOnly).nodes[0];
         const next = [...current, nextNode];
-        emit(element, "capability_dropped", { nodeId: id, capabilityId }, serialize(next, edges));
+        emit(element, "capability_dropped", { nodeId: id, capabilityId, commandId }, serialize(next, edges));
         window.requestAnimationFrame(() => flow.setCenter(
           position.x + INSERT_NODE_WIDTH / 2,
           position.y + INSERT_NODE_HEIGHT / 2,

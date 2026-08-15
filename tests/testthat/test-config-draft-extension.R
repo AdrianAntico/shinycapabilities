@@ -41,19 +41,37 @@ testthat::test_that("inspector apply preserves host-owned configuration", {
     })
 })
 
+testthat::test_that("inspector apply does not coalesce explicit empty drafts", {
+  source <- paste(deparse(capability_canvas_server), collapse = "\n")
+  testthat::expect_match(source,
+    "!is.null(draft[[name]])", fixed = TRUE)
+  testthat::expect_false(grepl(
+    "draft[[name]] %||% input[[config_input_key(node$id, name)]]",
+    source, fixed = TRUE))
+})
+
+testthat::test_that("selection changes publish explicit empty values", {
+  source <- paste(readLines(testthat::test_path("..", "..", "inst", "htmlwidgets", "src", "selection-system.jsx"), warn = FALSE), collapse = "\n")
+  module_source <- paste(readLines(testthat::test_path("..", "..", "R", "module.R"), warn = FALSE), collapse = "\n")
+  testthat::expect_match(source, "`${host.id}_change`", fixed = TRUE)
+  testthat::expect_match(source, "value: normalized", fixed = TRUE)
+  testthat::expect_match(module_source, "config_input_value", fixed = TRUE)
+  testthat::expect_match(module_source, "as.character(unlist(change$value", fixed = TRUE)
+})
+
 testthat::test_that("inspector subtree identity follows the selected node", {
   source <- paste(deparse(capability_canvas_server), collapse = "\n")
   testthat::expect_match(source, "inspector_node__", fixed = TRUE)
   testthat::expect_match(source, "node$id", fixed = TRUE)
   testthat::expect_match(source, "inspector_owner", fixed = TRUE)
-  testthat::expect_match(source, "config_input_key(node$id, name)", fixed = TRUE)
+  testthat::expect_match(source, "config_input_value(input, node$id, name)", fixed = TRUE)
   testthat::expect_match(source,
     "identical(input$inspector_owner %||% \"\", node$id)", fixed = TRUE)
 })
 
 testthat::test_that("Shiny inputs publish drafts without a second browser bridge", {
   source <- paste(deparse(capability_canvas_server), collapse = "\n")
-  testthat::expect_match(source, "input[[config_input_key(node$id, name)]]", fixed = TRUE)
+  testthat::expect_match(source, "config_input_value(input, node$id, name)", fixed = TRUE)
   testthat::expect_false(grepl("analytics-input-draft", source, fixed = TRUE))
   testthat::expect_false(grepl("config_draft_event", source, fixed = TRUE))
   testthat::expect_match(source, "shiny::isolate(config_drafts())", fixed = TRUE)
