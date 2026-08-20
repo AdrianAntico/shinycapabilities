@@ -32,6 +32,11 @@ shinycapabilities::run_interaction_components_demo()
 - `command_palette()` provides keyboard-first discovery and activation of
   host-defined commands without owning command execution.
 
+`command_palette_direct()` is an experimental parallel implementation used to
+qualify a package-owned Shiny transport and shared React runtime. Existing
+component contracts remain the supported path. See the
+[Direct Component Transport 1.0 report](docs/direct_component_transport_1_0.md).
+
 The [Workstation UI opportunity scan](docs/ui_opportunity_scan.md) documents
 the evidence, JavaScript library review, prioritization, event contracts, and
 future migration boundaries. No Workstation migration is included.

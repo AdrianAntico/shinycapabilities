@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "vite build && vite build --config vite.selection-system.config.js && vite build --config vite.interaction-components.config.js && vite build --config vite.data-grid.config.js && vite build --config vite.parameter-workbench.config.js && vite build --config vite.split-pane.config.js && vite build --config vite.agent-activity-monitor.config.js && vite build --config vite.relationship-graph.config.js && vite build --config vite.execution-replay.config.js"
+    "build": "vite build && vite build --config vite.selection-system.config.js && vite build --config vite.interaction-components.config.js && vite build --config vite.data-grid.config.js && vite build --config vite.parameter-workbench.config.js && vite build --config vite.split-pane.config.js && vite build --config vite.agent-activity-monitor.config.js && vite build --config vite.relationship-graph.config.js && vite build --config vite.execution-replay.config.js && npm run build:direct",
+    "build:direct": "set SC_DIRECT_ENTRY=vendor&& vite build --config vite.direct-transport.config.js && set SC_DIRECT_ENTRY=palette&& vite build --config vite.direct-transport.config.js"
   },
   "dependencies": {
     "@dagrejs/dagre": "3.1.1",
