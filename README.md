@@ -18,6 +18,24 @@ Node.js is not required to install or use the package; required browser assets a
 shinycapabilities::run_capability_demo()
 ```
 
+## Interaction capability lab
+
+The package also includes host-neutral, virtualized interaction components for
+large analytical catalogs and hierarchies:
+
+```r
+shinycapabilities::run_interaction_components_demo()
+```
+
+- `virtual_tree_browser()` provides searchable hierarchy navigation with
+  keyboard and screen-reader semantics.
+- `command_palette()` provides keyboard-first discovery and activation of
+  host-defined commands without owning command execution.
+
+The [Workstation UI opportunity scan](docs/ui_opportunity_scan.md) documents
+the evidence, JavaScript library review, prioritization, event contracts, and
+future migration boundaries. No Workstation migration is included.
+
 The installed runtime imports `callr`, `digest`, `htmltools`, `htmlwidgets`, `jsonlite`, and `shiny`.
 
 ## License and attribution
