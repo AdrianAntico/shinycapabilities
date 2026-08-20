@@ -36,6 +36,22 @@ The [Workstation UI opportunity scan](docs/ui_opportunity_scan.md) documents
 the evidence, JavaScript library review, prioritization, event contracts, and
 future migration boundaries. No Workstation migration is included.
 
+## Analytical data grid lab
+
+`data_grid()` is a parallel AG Grid Community-backed component for dense,
+virtualized analytical inventories. It uses stable row identity and bounded
+Shiny events while leaving host behavior outside the widget.
+
+```r
+shinycapabilities::run_data_grid_demo()
+```
+
+The [AG Grid Data Grid 1.0 report](docs/data_grid_1_0.md) documents the API,
+Community/Enterprise boundary, accessibility and scale tradeoffs, direct
+reactable comparison, and future migration seams. The recommendation is to
+selectively replace reactable for demanding interactive inventories, not report
+tables.
+
 The installed runtime imports `callr`, `digest`, `htmltools`, `htmlwidgets`, `jsonlite`, and `shiny`.
 
 ## License and attribution

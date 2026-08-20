@@ -16,6 +16,7 @@ produced the bundled assets.
 | @floating-ui/utils | 0.2.12 | MIT |
 | React | 19.2.8 | MIT |
 | React DOM | 19.2.8 | MIT |
+| AG Grid Community | 36.1.0 | MIT |
 | Zustand | 4.5.7 | MIT |
 | classcat | 5.0.5 | MIT |
 | scheduler | 0.27.0 | MIT |
@@ -59,3 +60,6 @@ React Flow and Rete.js were reviewed from their current official documentation.
 React Flow core is MIT. Rete core is MIT, but its `rete-structures` and
 `rete-scopes-plugin` optional plugins are CC-BY-NC-SA-4.0 and were not selected
 or bundled.
+
+AG Grid Enterprise is not installed or bundled. The data-grid component uses
+selectively registered modules from the MIT-licensed Community package only.
