@@ -79,6 +79,21 @@ shinycapabilities::run_relationship_graph_demo()
 See the [Relationship Graph 1.0 report](docs/relationship_graph_1_0.md) for the
 contract, scale boundary, dependency decision, and promotion guidance.
 
+## Execution replay lab
+
+`execution_replay()` provides a virtualized, read-only historical projection
+over host-supplied events, state snapshots, artifacts, evidence, failures,
+retries, interventions, and reviews. State-at-time never projects later state
+backward, and appended events do not dislodge a user inspecting history.
+
+```r
+shinycapabilities::run_execution_replay_demo()
+```
+
+See the [Execution Replay 1.0 report](docs/execution_replay_1_0.md) for the
+normalized contract, state-at-time rule, event API, scale boundary, and
+promotion guidance.
+
 The installed runtime imports `callr`, `digest`, `htmltools`, `htmlwidgets`, `jsonlite`, and `shiny`.
 
 ## License and attribution

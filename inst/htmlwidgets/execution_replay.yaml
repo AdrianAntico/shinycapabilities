@@ -1,0 +1,6 @@
+dependencies:
+  - name: execution-replay
+    version: 1.0.0
+    src: htmlwidgets/lib
+    script: execution-replay.js
+    stylesheet: execution-replay.css
