@@ -52,6 +52,20 @@ reactable comparison, and future migration seams. The recommendation is to
 selectively replace reactable for demanding interactive inventories, not report
 tables.
 
+## Agent activity monitor lab
+
+`agent_activity_monitor()` renders a read-only, host-neutral projection of
+governed actors, work items, events, attention states, and real dependency
+relationships. The host remains responsible for execution and all mutations.
+
+```r
+shinycapabilities::run_agent_activity_monitor_demo()
+```
+
+The [Agent Activity Monitor 1.0 report](docs/agent_activity_monitor_1_0.md)
+defines the normalized contract, bounded live-update behavior, accessibility
+semantics, and promotion boundary.
+
 The installed runtime imports `callr`, `digest`, `htmltools`, `htmlwidgets`, `jsonlite`, and `shiny`.
 
 ## License and attribution

@@ -1,0 +1,6 @@
+dependencies:
+  - name: shinycapabilities-agent-activity-monitor
+    version: 1.0.0
+    src: htmlwidgets/lib
+    script: agent-activity-monitor.js
+    stylesheet: agent-activity-monitor.css
