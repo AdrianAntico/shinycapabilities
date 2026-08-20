@@ -37,6 +37,11 @@ qualify a package-owned Shiny transport and shared React runtime. Existing
 component contracts remain the supported path. See the
 [Direct Component Transport 1.0 report](docs/direct_component_transport_1_0.md).
 
+The [Persistent Dynamic UI 1.0 report](docs/persistent_dynamic_ui_1_0.md)
+benchmarks keyed browser patching against repeated `renderUI()` regeneration,
+defines the bounded schema and state-ownership contract, and maps realistic
+Analytics Workstation migration opportunities.
+
 The [Workstation UI opportunity scan](docs/ui_opportunity_scan.md) documents
 the evidence, JavaScript library review, prioritization, event contracts, and
 future migration boundaries. No Workstation migration is included.

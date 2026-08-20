@@ -10,9 +10,11 @@ const copySources = {
   name: "publish-direct-transport-sources",
   closeBundle() {
     mkdirSync(sourceDir, { recursive: true });
-    for (const name of ["direct-transport.js", "direct-react-vendor.jsx", "command-palette-direct.jsx", "command-palette-direct.css"])
+    for (const name of ["direct-transport.js", "direct-react-vendor.jsx", "command-palette-direct.jsx", "command-palette-direct.css", "persistent-ui.js", "persistent-ui.css"])
       copyFileSync(resolve(root, `src/${name}`), resolve(sourceDir, name));
     copyFileSync(resolve(root, "src/direct-transport.js"), resolve(outDir, "direct-transport.js"));
+    copyFileSync(resolve(root, "src/persistent-ui.js"), resolve(outDir, "persistent-ui.js"));
+    copyFileSync(resolve(root, "src/persistent-ui.css"), resolve(outDir, "persistent-ui.css"));
   }
 };
 const target = process.env.SC_DIRECT_ENTRY || "vendor";

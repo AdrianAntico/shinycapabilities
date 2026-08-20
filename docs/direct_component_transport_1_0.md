@@ -2,12 +2,13 @@
 
 ## Decision
 
-**Promising, needs another qualification checkpoint.** The experiment proves
-that `shinycapabilities` can own a small Shiny-to-JavaScript transport and share
-one React runtime across components. It does not yet justify removing
-`htmlwidgets`: only one parallel component is qualified, several existing
-widgets require static HTML, and installed-package plus Workstation behavior has
-not been tested.
+**Qualified for incremental migration planning; not qualified for removal.**
+Command Palette and the non-React Persistent Dynamic UI now independently use
+the same package-owned lifecycle, revision, event, resize, and teardown runtime.
+This proves the transport is reusable and framework-neutral. It does not yet
+justify removing `htmlwidgets`: existing widgets require static HTML and
+installed-package, reconnect, CSP, and long-duration memory behavior still need
+qualification. See the [second qualification](persistent_dynamic_ui_1_0.md).
 
 ## What htmlwidgets currently owns
 
@@ -156,7 +157,7 @@ lifecycle and payload evidence.
 
 ## Safest migration path
 
-1. Qualify a second React-backed component against the shared runtime.
+1. Use Persistent Dynamic UI as the second, framework-neutral qualification.
 2. Add installed-package static HTML and reconnect tests.
 3. Compare real browser memory after repeated mount/update/remove cycles.
 4. Migrate simple Shiny-only components one at a time behind parallel APIs.

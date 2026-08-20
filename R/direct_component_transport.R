@@ -36,15 +36,18 @@ direct_transport_dependency <- function(component = NULL) {
   scripts <- c("direct-transport.js")
   if (identical(component, "command_palette_direct")) {
     scripts <- c("react-vendor-v1.js", scripts, "command-palette-direct.js")
+  } else if (identical(component, "persistent_ui")) {
+    scripts <- c(scripts, "persistent-ui.js")
   }
   htmltools::htmlDependency(
     name = paste0("shinycapabilities-direct-", component %||% "core"),
-    version = "1.0.0",
+    version = "1.0.1",
     src = c(file = normalizePath(root, winslash = "/", mustWork = TRUE)),
     script = scripts,
-    stylesheet = if (identical(component, "command_palette_direct")) {
-      "command-palette-direct.css"
-    } else NULL
+    stylesheet = switch(component,
+      command_palette_direct = "command-palette-direct.css",
+      persistent_ui = "persistent-ui.css",
+      NULL)
   )
 }
 

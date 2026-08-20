@@ -50,14 +50,16 @@
       const active = instances.get(element.id);
       if (active) {
         active.handle = definition.update(active.handle, value.payload || {}, {
-          element, emit: (suffix, payload) => emit(element, suffix, payload), source
+          element, emit: (suffix, payload) => emit(element, suffix, payload), source,
+          revision: value.revision
         }) || active.handle;
         active.revision = value.revision;
         metrics.updates += 1;
       } else {
         element.setAttribute("aria-busy", "true");
         const handle = definition.mount(element, value.payload || {}, {
-          element, emit: (suffix, payload) => emit(element, suffix, payload), source
+          element, emit: (suffix, payload) => emit(element, suffix, payload), source,
+          revision: value.revision
         });
         const resizeObserver = new ResizeObserver(entries => {
           const entry = entries[0];
@@ -70,6 +72,7 @@
         metrics.mounts += 1;
       }
       element.setAttribute("aria-busy", "false");
+      element.dataset.scDirectRevision = String(value.revision ?? "");
       element.dataset.scDirectLastMs = (now() - started).toFixed(3);
     } catch (error) { showError(element, error); }
   };
