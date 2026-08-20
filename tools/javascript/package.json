@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "vite build && vite build --config vite.selection-system.config.js && vite build --config vite.interaction-components.config.js && vite build --config vite.data-grid.config.js && vite build --config vite.parameter-workbench.config.js"
+    "build": "vite build && vite build --config vite.selection-system.config.js && vite build --config vite.interaction-components.config.js && vite build --config vite.data-grid.config.js && vite build --config vite.parameter-workbench.config.js && vite build --config vite.split-pane.config.js"
   },
   "dependencies": {
     "@floating-ui/dom": "1.8.0",
@@ -12,7 +12,8 @@
     "@xyflow/react": "12.11.2",
     "ag-grid-community": "36.1.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "react-resizable-panels": "4.12.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",
