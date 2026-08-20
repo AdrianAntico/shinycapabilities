@@ -1,0 +1,6 @@
+dependencies:
+  - name: relationship-graph
+    version: 1.0.0
+    src: htmlwidgets/lib
+    script: relationship-graph.js
+    stylesheet: relationship-graph.css

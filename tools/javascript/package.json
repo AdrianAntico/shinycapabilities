@@ -4,9 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "vite build && vite build --config vite.selection-system.config.js && vite build --config vite.interaction-components.config.js && vite build --config vite.data-grid.config.js && vite build --config vite.parameter-workbench.config.js && vite build --config vite.split-pane.config.js && vite build --config vite.agent-activity-monitor.config.js"
+    "build": "vite build && vite build --config vite.selection-system.config.js && vite build --config vite.interaction-components.config.js && vite build --config vite.data-grid.config.js && vite build --config vite.parameter-workbench.config.js && vite build --config vite.split-pane.config.js && vite build --config vite.agent-activity-monitor.config.js && vite build --config vite.relationship-graph.config.js"
   },
   "dependencies": {
+    "@dagrejs/dagre": "3.1.1",
     "@floating-ui/dom": "1.8.0",
     "@tanstack/react-virtual": "3.13.12",
     "@xyflow/react": "12.11.2",

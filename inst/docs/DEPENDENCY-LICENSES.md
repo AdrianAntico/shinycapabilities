@@ -9,6 +9,8 @@ produced the bundled assets.
 |---|---:|---|
 | @xyflow/react | 12.11.2 | MIT |
 | @xyflow/system | 0.0.79 | MIT |
+| @dagrejs/dagre | 3.1.1 | MIT |
+| @dagrejs/graphlib | 3.0.4 | MIT |
 | @tanstack/react-virtual | 3.13.12 | MIT |
 | @tanstack/virtual-core | 3.13.12 | MIT |
 | @floating-ui/dom | 1.8.0 | MIT |

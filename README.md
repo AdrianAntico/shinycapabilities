@@ -66,6 +66,19 @@ The [Agent Activity Monitor 1.0 report](docs/agent_activity_monitor_1_0.md)
 defines the normalized contract, bounded live-update behavior, accessibility
 semantics, and promotion boundary.
 
+## Relationship graph lab
+
+`relationship_graph()` renders typed analytical relationships with directed
+layout, navigation, filtering, neighborhood focus, and an accessible structured
+representation. It does not edit or execute the supplied graph.
+
+```r
+shinycapabilities::run_relationship_graph_demo()
+```
+
+See the [Relationship Graph 1.0 report](docs/relationship_graph_1_0.md) for the
+contract, scale boundary, dependency decision, and promotion guidance.
+
 The installed runtime imports `callr`, `digest`, `htmltools`, `htmlwidgets`, `jsonlite`, and `shiny`.
 
 ## License and attribution
