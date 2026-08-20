@@ -42,6 +42,10 @@ benchmarks keyed browser patching against repeated `renderUI()` regeneration,
 defines the bounded schema and state-ownership contract, and maps realistic
 Analytics Workstation migration opportunities.
 
+The [Shared Browser Runtime 1.0 report](docs/shared_browser_runtime_1_0.md)
+documents the versioned React/TanStack runtime, lazy component dependencies,
+bundle evidence, compatibility rules, and incremental migration recommendation.
+
 The [Workstation UI opportunity scan](docs/ui_opportunity_scan.md) documents
 the evidence, JavaScript library review, prioritization, event contracts, and
 future migration boundaries. No Workstation migration is included.

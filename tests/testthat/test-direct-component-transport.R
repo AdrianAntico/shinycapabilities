@@ -12,8 +12,12 @@ testthat::test_that("direct output attaches only its versioned dependencies", {
   deps <- htmltools::htmlDependencies(tag)
   testthat::expect_identical(tag$attribs$id, "palette")
   testthat::expect_match(tag$attribs$class, "sc-direct-component-output")
-  testthat::expect_length(deps, 1L)
-  testthat::expect_identical(deps[[1]]$script, c("react-vendor-v1.js", "direct-transport.js", "command-palette-direct.js"))
+  testthat::expect_length(deps, 3L)
+  testthat::expect_identical(vapply(deps, `[[`, character(1), "name"), c(
+    "shinycapabilities-browser-runtime", "shinycapabilities-direct-transport",
+    "shinycapabilities-direct-command-palette-direct"))
+  testthat::expect_identical(vapply(deps, function(x) x$script[[1]], character(1)), c(
+    "browser-runtime-v1.js", "direct-transport.js", "command-palette-direct.js"))
 })
 
 testthat::test_that("static direct rendering carries a structured payload", {
@@ -30,14 +34,14 @@ testthat::test_that("direct source owns lifecycle and bounded events", {
   palette <- paste(readLines(file.path(root, "src", "command-palette-direct.jsx"), warn = FALSE), collapse = "\n")
   for (marker in c("Shiny.OutputBinding", "addCustomMessageHandler", "ResizeObserver", "MutationObserver", "destroy", "liveInstances", "16384"))
     testthat::expect_match(source, marker, fixed = TRUE)
-  testthat::expect_match(palette, "ShinyCapabilitiesReactVendorV1", fixed = TRUE)
+  testthat::expect_match(palette, "ShinyCapabilitiesBrowserRuntimeV1", fixed = TRUE)
   testthat::expect_match(palette, 'role="combobox"', fixed = TRUE)
   testthat::expect_match(palette, "root.unmount", fixed = TRUE)
 })
 
 testthat::test_that("direct assets are installable without React duplication", {
   root <- system.file("www", "direct-transport", package = "shinycapabilities")
-  files <- c("react-vendor-v1.js", "direct-transport.js", "command-palette-direct.js", "command-palette-direct.css")
+  files <- c("browser-runtime-v1.js", "direct-transport.js", "command-palette-direct.js", "command-palette-direct.css")
   testthat::expect_true(all(file.exists(file.path(root, files))))
   testthat::expect_lt(file.info(file.path(root, "command-palette-direct.js"))$size, 20000)
   testthat::expect_true(file.exists(system.file("examples", "direct-transport", "app.R", package = "shinycapabilities")))

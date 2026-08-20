@@ -1,5 +1,6 @@
-const vendor = window.ShinyCapabilitiesReactVendorV1;
-if (!vendor) throw new Error("Shared shinycapabilities React vendor v1 was not loaded.");
+const vendor = window.ShinyCapabilitiesBrowserRuntimeV1;
+if (!vendor) throw new Error("Shared shinycapabilities browser runtime v1 was not loaded.");
+vendor.assertCompatible(1);
 const { React, createRoot, useVirtualizer } = vendor;
 const { useEffect, useMemo, useRef, useState } = React;
 import "./command-palette-direct.css";
@@ -78,6 +79,7 @@ function Palette({ host, model, emit }) {
 }
 
 const definition = {
+  runtimeMajor: 1,
   mount(element, model, context) {
     element.innerHTML = "";
     const root = createRoot(element);

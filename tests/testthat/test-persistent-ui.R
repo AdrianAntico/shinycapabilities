@@ -23,10 +23,11 @@ testthat::test_that("persistent UI rejects ambiguous structure", {
 
 testthat::test_that("persistent UI uses a React-free lazy dependency", {
   tag <- persistent_ui_output("panel")
-  dependency <- htmltools::htmlDependencies(tag)[[1]]
-  testthat::expect_identical(dependency$script, c("direct-transport.js", "persistent-ui.js"))
-  testthat::expect_identical(dependency$stylesheet, "persistent-ui.css")
-  testthat::expect_false(any(grepl("react", dependency$script, ignore.case = TRUE)))
+  dependencies <- htmltools::htmlDependencies(tag)
+  testthat::expect_identical(vapply(dependencies, function(x) x$script[[1]], character(1)),
+    c("direct-transport.js", "persistent-ui.js"))
+  testthat::expect_identical(dependencies[[2]]$stylesheet, "persistent-ui.css")
+  testthat::expect_false(any(grepl("react", unlist(lapply(dependencies, `[[`, "script")), ignore.case = TRUE)))
 })
 
 testthat::test_that("persistent updates send compact deterministic diffs", {

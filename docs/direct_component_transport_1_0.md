@@ -38,7 +38,7 @@ command_palette_direct()
   -> direct_component_output()
   -> Shiny.OutputBinding / one custom-message handler
   -> component registry
-  -> shared React vendor v1
+  -> shared browser runtime v1
   -> command-palette-direct.js
 ```
 
@@ -59,7 +59,7 @@ explicit unique ids.
 
 The direct test separates:
 
-* `react-vendor-v1.js`: React 19.2.8, React DOM, TanStack Virtual 3.13.12;
+* `browser-runtime-v1.js`: versioned React 19.2.8, React DOM, and TanStack Virtual 3.13.12;
 * `direct-transport.js`: framework-neutral lifecycle and Shiny transport;
 * `command-palette-direct.js`: component behavior only.
 
@@ -67,8 +67,8 @@ Built sizes are:
 
 | Asset | Raw | Gzip |
 |---|---:|---:|
-| Shared React vendor v1 | 202.74 KB | 63.79 KB |
-| Direct palette | 4.67 KB | 1.99 KB |
+| Shared browser runtime v1 | 203.26 KB | 63.30 KB |
+| Direct palette | 4.72 KB | 2.03 KB |
 | Direct palette CSS | 2.49 KB | 0.90 KB |
 | Existing combined interaction bundle | 211.47 KB | approximately 66 KB |
 

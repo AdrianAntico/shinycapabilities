@@ -30,25 +30,59 @@ new_direct_component <- function(component, payload, element_id = NULL) {
   ), class = "shinycapabilities_direct_component")
 }
 
-direct_transport_dependency <- function(component = NULL) {
+browser_runtime_dependency <- function() {
   root <- system.file("www", "direct-transport", package = "shinycapabilities")
   if (!nzchar(root)) root <- file.path("inst", "www", "direct-transport")
-  scripts <- c("direct-transport.js")
-  if (identical(component, "command_palette_direct")) {
-    scripts <- c("react-vendor-v1.js", scripts, "command-palette-direct.js")
-  } else if (identical(component, "persistent_ui")) {
-    scripts <- c(scripts, "persistent-ui.js")
-  }
   htmltools::htmlDependency(
-    name = paste0("shinycapabilities-direct-", component %||% "core"),
-    version = "1.0.1",
+    name = "shinycapabilities-browser-runtime",
+    version = "1.0.0",
     src = c(file = normalizePath(root, winslash = "/", mustWork = TRUE)),
-    script = scripts,
+    script = "browser-runtime-v1.js"
+  )
+}
+
+direct_transport_core_dependency <- function() {
+  root <- system.file("www", "direct-transport", package = "shinycapabilities")
+  if (!nzchar(root)) root <- file.path("inst", "www", "direct-transport")
+  htmltools::htmlDependency(
+    name = "shinycapabilities-direct-transport",
+    version = "1.1.0",
+    src = c(file = normalizePath(root, winslash = "/", mustWork = TRUE)),
+    script = "direct-transport.js"
+  )
+}
+
+direct_component_dependency <- function(component) {
+  root <- system.file("www", "direct-transport", package = "shinycapabilities")
+  if (!nzchar(root)) root <- file.path("inst", "www", "direct-transport")
+  script <- switch(component,
+    command_palette_direct = "command-palette-direct.js",
+    persistent_ui = "persistent-ui.js",
+    split_pane_direct = "split-pane-direct.js",
+    stop("Unknown direct component: ", component, call. = FALSE))
+  htmltools::htmlDependency(
+    name = paste0("shinycapabilities-direct-", gsub("_", "-", component)),
+    version = "1.0.0",
+    src = c(file = normalizePath(root, winslash = "/", mustWork = TRUE)),
+    script = script,
     stylesheet = switch(component,
       command_palette_direct = "command-palette-direct.css",
       persistent_ui = "persistent-ui.css",
+      split_pane_direct = "split-pane-direct.css",
       NULL)
   )
+}
+
+direct_transport_dependencies <- function(component) {
+  uses_runtime <- component %in% c("command_palette_direct", "split_pane_direct")
+  c(if (uses_runtime) list(browser_runtime_dependency()) else list(),
+    list(direct_transport_core_dependency(), direct_component_dependency(component)))
+}
+
+# Kept as one internal lookup for tests and transitional callers.
+direct_transport_dependency <- function(component = NULL) {
+  if (is.null(component)) return(direct_transport_core_dependency())
+  direct_transport_dependencies(component)
 }
 
 direct_component_tag <- function(id, component, height = "420px", width = "100%",
@@ -69,7 +103,7 @@ direct_component_tag <- function(id, component, height = "420px", width = "100%"
         null = "null", digits = NA, force = TRUE))
     ))
   }
-  htmltools::attachDependencies(tag, direct_transport_dependency(component), append = TRUE)
+  htmltools::attachDependencies(tag, direct_transport_dependencies(component), append = TRUE)
 }
 
 #' @exportS3Method htmltools::as.tags

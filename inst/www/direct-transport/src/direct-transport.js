@@ -122,10 +122,15 @@
   const initialize = () => { registerBinding(); observeRemoval(); mountStatic(document); };
 
   window.ShinyCapabilitiesDirectTransport = {
-    version: "1.0.0",
+    version: "1.1.0",
     register(name, definition) {
       if (!name || !definition?.mount || !definition?.update || !definition?.destroy) {
         throw new Error("Direct components require mount, update, and destroy methods.");
+      }
+      if (definition.runtimeMajor != null) {
+        const runtime = window.ShinyCapabilitiesBrowserRuntimeV1;
+        if (!runtime) throw new Error(`Component ${name} requires the shared browser runtime.`);
+        runtime.assertCompatible(definition.runtimeMajor);
       }
       components.set(name, definition);
       mountStatic(document);
