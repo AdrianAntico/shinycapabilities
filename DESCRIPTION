@@ -1,6 +1,6 @@
 Package: shinycapabilities
-Title: Capability-Oriented Workflow Canvas for Shiny
-Version: 0.1.0
+Title: Browser UI Platform and Capability-Oriented Workflow Canvas for Shiny
+Version: 0.2.0
 Authors@R:
     person("Adrian", "Antico", email = "adrianantico@gmail.com",
            role = c("aut", "cre"))

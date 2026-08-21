@@ -37,9 +37,10 @@ testthat::test_that("semantic palette clicks publish one insertion event", {
     "studio", registry, height = "100%", toolbar = FALSE
   ))
 
-  testthat::expect_true(grepl("paletteClickReady", html, fixed = TRUE))
-  testthat::expect_true(grepl("event.stopImmediatePropagation();insert(item)",
-    html, fixed = TRUE))
-  testthat::expect_true(grepl("item?.tagName==='BUTTON'&&event.key==='Enter'",
-    html, fixed = TRUE))
+  # Direct Component Transport owns insertion in the canvas JS bundle.
+  # The UI HTML must not reintroduce a second palette click owner.
+  testthat::expect_false(grepl("paletteClickReady", html, fixed = TRUE))
+  testthat::expect_match(html, "__shinycapPaletteDispatcher", fixed = TRUE)
+  testthat::expect_identical(length(gregexpr("shinycapabilities:v1:insert", html,
+    fixed = TRUE)[[1L]]), 1L)
 })

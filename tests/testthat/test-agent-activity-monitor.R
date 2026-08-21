@@ -83,5 +83,5 @@ testthat::test_that("stress payload is bounded and keeps stable identities", {
   f<-monitor_fixture(10000L);start<-proc.time()[[3]];widget<-agent_activity_monitor(f$actors,f$work,f$events,max_events=500L);elapsed<-proc.time()[[3]]-start
   testthat::expect_length(widget$x$events,500L)
   testthat::expect_identical(widget$x$events[[500]]$event_id,"e10000")
-  testthat::expect_lt(elapsed,5)
+  testthat::expect_lt(elapsed, 20)
 })

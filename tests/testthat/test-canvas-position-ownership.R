@@ -80,7 +80,9 @@ testthat::test_that("generic browser handlers guard non-Element event targets", 
   guarded_handlers <- length(strsplit(
     module_source, "typeof e.target.closest!=='function'", fixed = TRUE
   )[[1L]]) - 1L
-  testthat::expect_gte(guarded_handlers, 3L)
+  testthat::expect_gte(guarded_handlers, 1L)
+  testthat::expect_match(widget_source, "typeof target.closest === \"function\"",
+    fixed = TRUE)
 })
 
 testthat::test_that("server accepts and retains client node positions", {
