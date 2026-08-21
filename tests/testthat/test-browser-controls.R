@@ -43,6 +43,12 @@ testthat::test_that("actions and displays expose semantic roles", {
   testthat::expect_equal(length(gregexpr("sc-skeleton-line", as.character(skeleton), fixed = TRUE)[[1]]), 2L)
 })
 
+testthat::test_that("actions remain available for the Shiny input binding", {
+  html <- as.character(browser_action_button("run", "Run"))
+  testthat::expect_match(html, 'data-sc-action="true"', fixed = TRUE)
+  testthat::expect_false(grepl("shiny-bound-input", html, fixed = TRUE))
+})
+
 testthat::test_that("updates namespace through the standard Shiny input channel", {
   captured <- new.env(parent = emptyenv())
   session <- list(sendInputMessage = function(id, message) {

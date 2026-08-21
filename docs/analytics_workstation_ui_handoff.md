@@ -202,21 +202,24 @@ are complete.
 Do not add R wrapper packages around browser libraries when
 `shinycapabilities` can own the direct browser integration cleanly.
 
-## Remaining Capability Gaps
+## Complete Browser Surface
 
-The following browser-native capability classes still require implementation or
-qualification:
+[Complete Browser UI Surface 1.0](browser_ui_surface_1_0.md) closes the previously
+known generic gaps with:
 
-- overlays, popovers, tooltips, and context menus
-- modal, dialog, drawer, and sheet surfaces
-- notification center and toast queue
-- navigation primitives where Workstation requires replacement
-- enhanced file upload and drop presentation
-- download and action presentation
-- output shells, fullscreen, and spotlight presentation
-- reusable Report Studio capabilities discovered during integration
+- tooltips, popovers, context menus, and one shared overlay layer
+- native dialog, confirmation, drawer, side-sheet, and bottom-sheet surfaces
+- a bounded accessible notification center and toast queue
+- tabs, disclosures, breadcrumbs, pagination, and report outlines
+- polished file upload/drop presentation over Shiny upload authority
+- download/artifact action presentation over Shiny download authority
+- resize-aware output shells with loading, empty, error, fullscreen, and spotlight
+- generic Report Studio outline, block-shell, disclosure, composition, and resize seams
 
-These gaps do not block migration of already qualified surfaces.
+No generic visible UI capability class found in the current read-only Workstation
+scan remains without a qualified component or semantic browser strategy. Host
+business semantics, route authority, file handling, artifact generation, and
+Report Studio document behavior remain intentionally outside the package.
 
 ## Workstation Migration Evidence
 

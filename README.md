@@ -20,6 +20,10 @@ The [Analytics Workstation UI handoff](docs/analytics_workstation_ui_handoff.md)
 is the durable integration entry point for ownership boundaries, qualified
 capabilities, dependency direction, migration rules, and remaining UI gaps.
 
+The [Complete Browser UI Surface 1.0](docs/browser_ui_surface_1_0.md) documents
+the overlay, dialog, notification, navigation, file, download, output-shell,
+fullscreen, and Report Studio primitives that close the generic migration gaps.
+
 ## Smoke example
 
 ```r

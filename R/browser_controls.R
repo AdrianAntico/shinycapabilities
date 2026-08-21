@@ -218,7 +218,7 @@ browser_action_button <- function(input_id, label, icon = NULL,
     disabled = FALSE, loading = FALSE, title = NULL) {
   variant <- match.arg(variant)
   tag <- htmltools::tags$button(id = input_id, type = "button",
-    class = paste("sc-browser-action shiny-bound-input", paste0("is-", variant),
+    class = paste("sc-browser-action", paste0("is-", variant),
       if (isTRUE(loading)) "is-loading"), `data-sc-action` = "true",
     disabled = if (isTRUE(disabled) || isTRUE(loading)) "disabled" else NULL,
     `aria-busy` = tolower(as.character(isTRUE(loading))), title = title,
