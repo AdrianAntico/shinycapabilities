@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build && vite build --config vite.selection-system.config.js && vite build --config vite.interaction-components.config.js && vite build --config vite.data-grid.config.js && vite build --config vite.parameter-workbench.config.js && vite build --config vite.split-pane.config.js && vite build --config vite.agent-activity-monitor.config.js && vite build --config vite.relationship-graph.config.js && vite build --config vite.execution-replay.config.js && npm run build:direct",
-    "build:direct": "set SC_DIRECT_ENTRY=runtime&& vite build --config vite.direct-transport.config.js && set SC_DIRECT_ENTRY=palette&& vite build --config vite.direct-transport.config.js && set SC_DIRECT_ENTRY=split&& vite build --config vite.direct-transport.config.js"
+    "build:direct": "set SC_DIRECT_ENTRY=runtime&& vite build --config vite.direct-transport.config.js && set SC_DIRECT_ENTRY=palette&& vite build --config vite.direct-transport.config.js && set SC_DIRECT_ENTRY=split&& vite build --config vite.direct-transport.config.js && vite build --config vite.monaco-editor.config.js"
   },
   "dependencies": {
     "@dagrejs/dagre": "3.1.1",
@@ -13,6 +13,7 @@
     "@tanstack/react-virtual": "3.13.12",
     "@xyflow/react": "12.11.2",
     "ag-grid-community": "36.1.0",
+    "monaco-editor": "0.56.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-resizable-panels": "4.12.2"
@@ -20,5 +21,8 @@
   "devDependencies": {
     "@vitejs/plugin-react": "latest",
     "vite": "latest"
+  },
+  "overrides": {
+    "dompurify": "3.4.14"
   }
 }

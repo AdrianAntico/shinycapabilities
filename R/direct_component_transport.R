@@ -59,16 +59,20 @@ direct_component_dependency <- function(component) {
     command_palette_direct = "command-palette-direct.js",
     persistent_ui = "persistent-ui.js",
     split_pane_direct = "split-pane-direct.js",
+    code_editor = "code-editor.js",
     stop("Unknown direct component: ", component, call. = FALSE))
   htmltools::htmlDependency(
     name = paste0("shinycapabilities-direct-", gsub("_", "-", component)),
     version = "1.0.0",
     src = c(file = normalizePath(root, winslash = "/", mustWork = TRUE)),
-    script = script,
+    script = if (identical(component, "code_editor")) {
+      list(src = script, type = "module")
+    } else script,
     stylesheet = switch(component,
       command_palette_direct = "command-palette-direct.css",
       persistent_ui = "persistent-ui.css",
       split_pane_direct = "split-pane-direct.css",
+      code_editor = "code-editor.css",
       NULL)
   )
 }

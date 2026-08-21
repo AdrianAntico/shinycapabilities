@@ -4,6 +4,7 @@
 
   const components = new Map();
   const instances = new Map();
+  const pending = new Map();
   const metrics = { mounts: 0, updates: 0, resizes: 0, destroys: 0, errors: 0 };
   let bindingRegistered = false;
   let observer = null;
@@ -44,7 +45,12 @@
     try {
       const type = value?.component || element.dataset.scDirectComponent;
       const definition = components.get(type);
-      if (!definition) throw new Error(`Unknown direct component '${type}'.`);
+      if (!definition) {
+        pending.set(element.id, { element, value, source });
+        element.setAttribute("aria-busy", "true");
+        return;
+      }
+      pending.delete(element.id);
       const current = instances.get(element.id);
       if (current && current.type !== type) destroy(element);
       const active = instances.get(element.id);
@@ -133,6 +139,11 @@
         runtime.assertCompatible(definition.runtimeMajor);
       }
       components.set(name, definition);
+      for (const [id, item] of pending) {
+        const type = item.value?.component || item.element?.dataset?.scDirectComponent;
+        if (type === name && item.element?.isConnected) deliver(item.element, item.value, item.source);
+        else if (!item.element?.isConnected) pending.delete(id);
+      }
       mountStatic(document);
     },
     emit,

@@ -108,6 +108,19 @@ See the [Execution Replay 1.0 report](docs/execution_replay_1_0.md) for the
 normalized contract, state-at-time rule, event API, scale boundary, and
 promotion guidance.
 
+## Monaco editor lab
+
+`code_editor()` provides pre-bundled Monaco editing and diff views for R,
+Julia, Python, SQL, JSON, YAML, and Markdown. Drafts remain in the browser until
+explicitly applied; execution remains the host's responsibility.
+
+```r
+shinycapabilities::run_code_editor_demo()
+```
+
+See the [Monaco Editor 1.0 report](docs/monaco_editor_1_0.md) for the state,
+event, accessibility, worker, and promotion contracts.
+
 The installed runtime imports `callr`, `digest`, `htmltools`, `htmlwidgets`, `jsonlite`, and `shiny`.
 
 ## License and attribution

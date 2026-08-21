@@ -19,6 +19,8 @@ produced the bundled assets.
 | React | 19.2.8 | MIT |
 | React DOM | 19.2.8 | MIT |
 | AG Grid Community | 36.1.0 | MIT |
+| Monaco Editor | 0.56.0 | MIT |
+| DOMPurify | 3.4.14 | MPL-2.0 or Apache-2.0 |
 | Zustand | 4.5.7 | MIT |
 | classcat | 5.0.5 | MIT |
 | scheduler | 0.27.0 | MIT |
