@@ -1,6 +1,0 @@
-dependencies:
-  - name: shinycapabilities
-    version: 0.1.0
-    src: htmlwidgets/lib
-    script: shinycapabilities.js
-    stylesheet: shinycapabilities.css

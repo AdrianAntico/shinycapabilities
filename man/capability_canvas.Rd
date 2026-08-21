@@ -2,7 +2,7 @@
 % Please edit documentation in R/widget.R
 \name{capability_canvas}
 \alias{capability_canvas}
-\title{Create a capability canvas htmlwidget}
+\title{Create a capability canvas}
 \usage{
 capability_canvas(
   registry,
@@ -31,5 +31,5 @@ capability_canvas(
 \item{graph_revision}{Monotonic authoritative graph revision.}
 }
 \description{
-Create a capability canvas htmlwidget
+Create a capability canvas
 }

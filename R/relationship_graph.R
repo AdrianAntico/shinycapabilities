@@ -144,18 +144,17 @@ relationship_graph <- function(nodes, edges, selected_id = NULL, focus_id = NULL
     filters = list(), direction = "LR", max_render_nodes = 500L,
     max_metadata_fields = 20L, show_minimap = TRUE, state = "ready", message = NULL, width = NULL,
     height = "680px", element_id = NULL) {
-  htmlwidgets::createWidget("relationship_graph", json_object_payload(
+  new_direct_component("relationship_graph",
     relationship_graph_model(nodes, edges, selected_id, focus_id, filters,
-      direction, max_render_nodes, max_metadata_fields, show_minimap, state, message)),
-    width = width, height = height, package = "shinycapabilities", elementId = element_id)
+      direction, max_render_nodes, max_metadata_fields, show_minimap, state, message),
+    element_id, width, height)
 }
 
 #' @rdname relationship_graph
 #' @param output_id Shiny output identifier.
 #' @export
 relationship_graph_output <- function(output_id, width = "100%", height = "680px") {
-  htmlwidgets::shinyWidgetOutput(output_id, "relationship_graph", width, height,
-    package = "shinycapabilities")
+  direct_component_output(output_id, "relationship_graph", width, height)
 }
 
 #' @rdname relationship_graph
@@ -165,7 +164,7 @@ relationship_graph_output <- function(output_id, width = "100%", height = "680px
 #' @export
 render_relationship_graph <- function(expr, env = parent.frame(), quoted = FALSE) {
   if (!quoted) expr <- substitute(expr)
-  htmlwidgets::shinyRenderWidget(expr, relationship_graph_output, env, quoted = TRUE)
+  render_direct_component(expr, relationship_graph_output, env, quoted = TRUE)
 }
 
 #' Update a relationship graph
@@ -177,12 +176,13 @@ render_relationship_graph <- function(expr, env = parent.frame(), quoted = FALSE
 #' @param output_id Graph output identifier.
 #' @inheritParams relationship_graph
 #' @param fit_request Incrementing value or token requesting fit-to-view.
+#' @param revision Optional monotonic transport revision.
 #' @export
 update_relationship_graph <- function(session, output_id, nodes = NULL, edges = NULL,
     selected_id = NULL, focus_id = NULL, filters = NULL, direction = NULL,
     fit_request = NULL, max_render_nodes = 500L, max_metadata_fields = 20L,
-    state = NULL, message = NULL) {
-  payload <- list(id = session$ns(output_id))
+    state = NULL, message = NULL, revision = as.integer(Sys.time())) {
+  payload <- list()
   normalized_nodes <- if (is.null(nodes)) NULL else normalize_relationship_graph_nodes(nodes, max_metadata_fields)
   if (!is.null(normalized_nodes)) payload$nodes <- normalized_nodes
   if (!is.null(edges)) {
@@ -202,7 +202,7 @@ update_relationship_graph <- function(session, output_id, nodes = NULL, edges = 
   if (!is.null(state)) payload$state <- match.arg(state, c("ready", "loading", "error"))
   if (!is.null(message)) payload$message <- as.character(message)[[1L]]
   payload$maxRenderNodes <- max(10L, as.integer(max_render_nodes))
-  session$sendCustomMessage("shinycapabilities:relationship-graph:update", payload)
+  update_direct_component(session, output_id, "relationship_graph", payload, revision)
   invisible(NULL)
 }
 

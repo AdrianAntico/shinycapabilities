@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 const publishWidgetSource = {
   name: "publish-widget-source-contract",
   closeBundle() {
-    const target = resolve(import.meta.dirname, "../../inst/htmlwidgets/src");
+    const target = resolve(import.meta.dirname, "../../inst/www/direct-transport/src");
     mkdirSync(target, { recursive: true });
     copyFileSync(
       resolve(import.meta.dirname, "src/widget.jsx"),
@@ -25,8 +25,8 @@ export default defineConfig({
     "process.env.NODE_ENV": JSON.stringify("production")
   },
   build: {
-    outDir: "../../inst/htmlwidgets/lib",
-    emptyOutDir: true,
+    outDir: "../../inst/www/direct-transport",
+    emptyOutDir: false,
     cssCodeSplit: false,
     lib: {
       entry: resolve(import.meta.dirname, "src/widget.jsx"),

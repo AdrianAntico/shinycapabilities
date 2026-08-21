@@ -4,7 +4,13 @@
 \alias{new_direct_component}
 \title{Experimental direct browser component}
 \usage{
-new_direct_component(component, payload, element_id = NULL)
+new_direct_component(
+  component,
+  payload,
+  element_id = NULL,
+  width = NULL,
+  height = NULL
+)
 }
 \arguments{
 \item{component}{Registered browser component name.}
@@ -19,7 +25,6 @@ An object of class `shinycapabilities_direct_component`.
 }
 \description{
 Construct a host-neutral component payload for the package-owned direct
-Shiny transport. This is an experimental infrastructure API; existing
-htmlwidgets components remain unchanged.
+Shiny transport. This is the package's canonical browser transport.
 }
 \keyword{internal}

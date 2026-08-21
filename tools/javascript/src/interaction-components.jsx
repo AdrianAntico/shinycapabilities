@@ -3,11 +3,8 @@ import { createRoot } from "react-dom/client";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import "./interaction-components.css";
 
-const publish = (element, suffix, value) => {
-  if (window.HTMLWidgets?.shinyMode && window.Shiny) {
-    window.Shiny.setInputValue(`${element.id}_${suffix}`, value, { priority: "event" });
-  }
-};
+const emitters = new WeakMap();
+const publish = (element, suffix, value) => emitters.get(element)?.(suffix, value);
 
 const eventPayload = (item, extra = {}) => ({
   id: item.id,
@@ -280,19 +277,20 @@ function CommandPalette({ element, model }) {
   </div>;
 }
 
-const registerWidget = (name, Component) => {
-  window.HTMLWidgets.widget({
-    name,
-    type: "output",
-    factory(element) {
-      const root = createRoot(element);
-      return {
-        renderValue(model) { root.render(<Component element={element} model={model || {}} />); },
-        resize() {}
-      };
-    }
-  });
-};
-
-registerWidget("virtual_tree_browser", VirtualTreeBrowser);
-registerWidget("command_palette", CommandPalette);
+window.ShinyCapabilitiesDirectTransport.register("virtual_tree_browser", {
+  runtimeMajor: 1,
+  mount(element, model, context) {
+    const root = createRoot(element);
+    emitters.set(element, context.emit);
+    root.render(<VirtualTreeBrowser element={element} model={model || {}} />);
+    return { root, model };
+  },
+  update(handle, model, context) {
+    handle.model = { ...handle.model, ...model };
+    emitters.set(context.element, context.emit);
+    handle.root.render(<VirtualTreeBrowser element={context.element} model={handle.model} />);
+    return handle;
+  },
+  resize() {},
+  destroy(handle, element) { handle.root.unmount(); emitters.delete(element); }
+});

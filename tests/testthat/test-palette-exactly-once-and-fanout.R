@@ -21,7 +21,7 @@ testthat::test_that("palette has one guarded semantic insertion owner", {
 })
 
 testthat::test_that("canvas insertion command identities are idempotent across remounts", {
-  source <- paste(readLines(testthat::test_path("..", "..", "inst", "htmlwidgets", "src", "widget.jsx"),
+  source <- paste(readLines(testthat::test_path("..", "..", "inst", "www", "direct-transport", "src", "widget.jsx"),
     warn = FALSE), collapse = "\n")
   testthat::expect_match(source, "processedInsertCommands", fixed = TRUE)
   testthat::expect_match(source,

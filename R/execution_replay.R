@@ -212,18 +212,17 @@ execution_replay <- function(execution, events, snapshots = NULL,
     related_records = NULL, selected_event_id = NULL, max_events = 10000L,
     max_metadata_fields = 24L, playback_interval = 1000L, width = NULL,
     height = "720px", element_id = NULL) {
-  htmlwidgets::createWidget("execution_replay", json_object_payload(
+  new_direct_component("execution_replay",
     execution_replay_model(execution, events, snapshots, related_records,
-      selected_event_id, max_events, max_metadata_fields, playback_interval)),
-    width = width, height = height, package = "shinycapabilities", elementId = element_id)
+      selected_event_id, max_events, max_metadata_fields, playback_interval),
+    element_id, width, height)
 }
 
 #' @rdname execution_replay
 #' @param output_id Shiny output identifier.
 #' @export
 execution_replay_output <- function(output_id, width = "100%", height = "720px") {
-  htmlwidgets::shinyWidgetOutput(output_id, "execution_replay", width, height,
-    package = "shinycapabilities")
+  direct_component_output(output_id, "execution_replay", width, height)
 }
 
 #' @rdname execution_replay
@@ -233,7 +232,7 @@ execution_replay_output <- function(output_id, width = "100%", height = "720px")
 #' @export
 render_execution_replay <- function(expr, env = parent.frame(), quoted = FALSE) {
   if (!quoted) expr <- substitute(expr)
-  htmlwidgets::shinyRenderWidget(expr, execution_replay_output, env, quoted = TRUE)
+  render_direct_component(expr, execution_replay_output, env, quoted = TRUE)
 }
 
 #' Update an execution replay
@@ -245,20 +244,22 @@ render_execution_replay <- function(expr, env = parent.frame(), quoted = FALSE) 
 #' @param output_id Replay output identifier.
 #' @inheritParams execution_replay
 #' @param mode Replace supplied history or append it to existing browser history.
+#' @param revision Optional monotonic transport revision.
 #' @export
 update_execution_replay <- function(session, output_id, execution = NULL,
     events = NULL, snapshots = NULL, related_records = NULL,
     selected_event_id = NULL, mode = c("replace", "append"),
-    max_events = 10000L, max_metadata_fields = 24L) {
+    max_events = 10000L, max_metadata_fields = 24L,
+    revision = as.integer(Sys.time())) {
   mode <- match.arg(mode)
-  payload <- list(id = session$ns(output_id), mode = mode,
+  payload <- list(mode = mode,
     maxEvents = max(1L, as.integer(max_events)))
   if (!is.null(execution)) payload$execution <- normalize_execution_replay_execution(execution, max_metadata_fields)
   if (!is.null(events)) payload$events <- normalize_execution_replay_events(events, max_events, max_metadata_fields)$records
   if (!is.null(snapshots)) payload$snapshots <- normalize_execution_replay_snapshots(snapshots, max_metadata_fields)
   if (!is.null(related_records)) payload$relatedRecords <- normalize_execution_replay_related(related_records, max_metadata_fields)
   if (!is.null(selected_event_id)) payload$selectedEventId <- as.character(selected_event_id)[[1L]]
-  session$sendCustomMessage("shinycapabilities:execution-replay:update", payload)
+  update_direct_component(session, output_id, "execution_replay", payload, revision)
   invisible(NULL)
 }
 

@@ -12,7 +12,8 @@ update_data_grid(
   selected_rows = NULL,
   quick_filter = NULL,
   loading = NULL,
-  column_state = NULL
+  column_state = NULL,
+  revision = as.integer(Sys.time())
 )
 }
 \arguments{
@@ -33,6 +34,8 @@ the supplied session.}
 
 \item{column_state}{Optional AG Grid column-state records previously emitted
 by the widget.}
+
+\item{revision}{Optional monotonic transport revision.}
 }
 \description{
 Update a rendered data grid

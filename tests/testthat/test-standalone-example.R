@@ -16,9 +16,9 @@ testthat::test_that("optional example owns a minimal neutral workflow", {
 
 testthat::test_that("bundled widget exposes connection and resize quality contracts", {
   asset <- function(name) {
-    path <- system.file("htmlwidgets", "lib", name, package = "shinycapabilities")
+    path <- system.file("www", "direct-transport", name, package = "shinycapabilities")
     if (nzchar(path)) return(path)
-    testthat::test_path("..", "..", "inst", "htmlwidgets", "lib", name)
+    testthat::test_path("..", "..", "inst", "www", "direct-transport", name)
   }
   javascript <- paste(readLines(
     asset("shinycapabilities.js"), warn = FALSE

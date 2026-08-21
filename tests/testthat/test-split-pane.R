@@ -40,7 +40,7 @@ testthat::test_that("programmatic update sends bounded operations", {
 })
 
 testthat::test_that("bundled split pane and composition demo ship", {
-  testthat::expect_true(file.exists(system.file("htmlwidgets","lib","split-pane.js",package="shinycapabilities")))
-  testthat::expect_true(file.exists(system.file("htmlwidgets","lib","split-pane.css",package="shinycapabilities")))
+  testthat::expect_true(file.exists(system.file("www","direct-transport","split-pane.js",package="shinycapabilities")))
+  testthat::expect_true(file.exists(system.file("www","direct-transport","split-pane.css",package="shinycapabilities")))
   testthat::expect_true(file.exists(system.file("examples","split-pane","app.R",package="shinycapabilities")))
 })

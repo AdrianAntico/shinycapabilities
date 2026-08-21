@@ -126,24 +126,18 @@ normalize_data_grid_options <- function(options) {
 data_grid <- function(data, columns = NULL, row_id = NULL, options = list(),
                       width = NULL, height = "560px", element_id = NULL) {
   rows <- data_grid_records(data, row_id)
-  htmlwidgets::createWidget(
-    name = "data_grid",
-    x = json_object_payload(list(
+  new_direct_component("data_grid", list(
       rows = rows$records,
       columns = normalize_data_grid_columns(data, columns),
       options = normalize_data_grid_options(options)
-    )),
-    width = width, height = height, package = "shinycapabilities",
-    elementId = element_id
-  )
+    ), element_id = element_id, width = width, height = height)
 }
 
 #' @rdname data_grid
 #' @param output_id Shiny output identifier.
 #' @export
 data_grid_output <- function(output_id, width = "100%", height = "560px") {
-  htmlwidgets::shinyWidgetOutput(output_id, "data_grid", width, height,
-    package = "shinycapabilities")
+  direct_component_output(output_id, "data_grid", width, height)
 }
 
 #' @rdname data_grid
@@ -153,7 +147,7 @@ data_grid_output <- function(output_id, width = "100%", height = "560px") {
 #' @export
 render_data_grid <- function(expr, env = parent.frame(), quoted = FALSE) {
   if (!quoted) expr <- substitute(expr)
-  htmlwidgets::shinyRenderWidget(expr, data_grid_output, env, quoted = TRUE)
+  render_direct_component(expr, data_grid_output, env, quoted = TRUE)
 }
 
 #' Update a rendered data grid
@@ -168,17 +162,19 @@ render_data_grid <- function(expr, env = parent.frame(), quoted = FALSE) {
 #' @param loading Optional loading-overlay state.
 #' @param column_state Optional AG Grid column-state records previously emitted
 #'   by the widget.
+#' @param revision Optional monotonic transport revision.
 #' @export
 update_data_grid <- function(session, output_id, data = NULL, row_id = NULL,
                              selected_rows = NULL, quick_filter = NULL,
-                             loading = NULL, column_state = NULL) {
-  message <- list(id = session$ns(output_id))
+                             loading = NULL, column_state = NULL,
+                             revision = as.integer(Sys.time())) {
+  message <- list()
   if (!is.null(data)) message$rows <- data_grid_records(data, row_id)$records
   if (!is.null(selected_rows)) message$selectedRows <- unname(as.character(selected_rows))
   if (!is.null(quick_filter)) message$quickFilter <- as.character(quick_filter)
   if (!is.null(loading)) message$loading <- isTRUE(loading)
   if (!is.null(column_state)) message$columnState <- column_state
-  session$sendCustomMessage("shinycapabilities:data-grid:update", message)
+  update_direct_component(session, output_id, "data_grid", message, revision)
   invisible(NULL)
 }
 

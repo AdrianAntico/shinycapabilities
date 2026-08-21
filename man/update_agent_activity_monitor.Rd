@@ -12,7 +12,8 @@ update_agent_activity_monitor(
   events = NULL,
   summary = NULL,
   selected_work_id = NULL,
-  max_events = 500L
+  max_events = 500L,
+  revision = as.integer(Sys.time())
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ update_agent_activity_monitor(
 \item{selected_work_id}{Initially selected work identity.}
 
 \item{max_events}{Maximum events retained in the browser payload.}
+
+\item{revision}{Optional monotonic transport revision.}
 }
 \description{
 Replaces only supplied projections and preserves browser selection/view state

@@ -10,7 +10,7 @@ const publishDataGridSources = {
     }
   },
   closeBundle() {
-    const target = resolve(import.meta.dirname, "../../inst/htmlwidgets/src");
+    const target = resolve(import.meta.dirname, "../../inst/www/direct-transport/src");
     mkdirSync(target, { recursive: true });
     copyFileSync(resolve(import.meta.dirname, "src/data-grid.js"), resolve(target, "data-grid.js"));
     copyFileSync(resolve(import.meta.dirname, "src/data-grid.css"), resolve(target, "data-grid.css"));
@@ -20,7 +20,7 @@ const publishDataGridSources = {
 export default defineConfig({
   plugins: [publishDataGridSources],
   build: {
-    outDir: "../../inst/htmlwidgets/lib",
+    outDir: "../../inst/www/direct-transport",
     emptyOutDir: false,
     cssCodeSplit: false,
     lib: {

@@ -51,7 +51,7 @@ testthat::test_that("inspector apply does not coalesce explicit empty drafts", {
 })
 
 testthat::test_that("selection changes publish explicit empty values", {
-  source <- paste(readLines(testthat::test_path("..", "..", "inst", "htmlwidgets", "src", "selection-system.jsx"), warn = FALSE), collapse = "\n")
+  source <- paste(readLines(testthat::test_path("..", "..", "inst", "www", "direct-transport", "src", "selection-system.jsx"), warn = FALSE), collapse = "\n")
   module_source <- paste(readLines(testthat::test_path("..", "..", "R", "module.R"), warn = FALSE), collapse = "\n")
   testthat::expect_match(source, "`${host.id}_change`", fixed = TRUE)
   testthat::expect_match(source, "value: normalized", fixed = TRUE)
@@ -83,7 +83,7 @@ testthat::test_that("Shiny inputs publish drafts without a second browser bridge
 
 testthat::test_that("configurable inspectors expose one state-aware sticky action region", {
   source <- paste(deparse(capability_canvas_server), collapse = "\n")
-  css <- paste(readLines(system.file("htmlwidgets", "src", "widget.css",
+  css <- paste(readLines(system.file("www", "direct-transport", "src", "widget.css",
     package = "shinycapabilities"), warn = FALSE), collapse = "\n")
   testthat::expect_match(source, "sc-inspector-sticky-actions", fixed = TRUE)
   testthat::expect_equal(length(gregexpr("Apply configuration", source, fixed = TRUE)[[1]]), 1L)

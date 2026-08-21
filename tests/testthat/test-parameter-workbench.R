@@ -49,7 +49,7 @@ testthat::test_that("server exposes draft applied validation and nonce-bearing e
 })
 
 testthat::test_that("authored client contract covers apply reset conflicts and accessibility", {
-  source <- paste(readLines(system.file("htmlwidgets","src","parameter-workbench.jsx",package="shinycapabilities"),warn=FALSE),collapse="\n")
+  source <- paste(readLines(system.file("www","direct-transport","src","parameter-workbench.jsx",package="shinycapabilities"),warn=FALSE),collapse="\n")
   testthat::expect_match(source,'type: "apply"',fixed=TRUE)
   testthat::expect_match(source,'type: "reset"',fixed=TRUE)
   testthat::expect_match(source,"conflictPolicy",fixed=TRUE)
@@ -60,6 +60,6 @@ testthat::test_that("authored client contract covers apply reset conflicts and a
 
 testthat::test_that("standalone workbench demo and bundled assets ship", {
   testthat::expect_true(file.exists(system.file("examples","parameter-workbench","app.R",package="shinycapabilities")))
-  testthat::expect_true(file.exists(system.file("htmlwidgets","lib","parameter-workbench.js",package="shinycapabilities")))
-  testthat::expect_true(file.exists(system.file("htmlwidgets","lib","parameter-workbench.css",package="shinycapabilities")))
+  testthat::expect_true(file.exists(system.file("www","direct-transport","parameter-workbench.js",package="shinycapabilities")))
+  testthat::expect_true(file.exists(system.file("www","direct-transport","parameter-workbench.css",package="shinycapabilities")))
 })

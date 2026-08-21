@@ -176,18 +176,16 @@ agent_activity_monitor_model <- function(actors, work_items, events = NULL,
 agent_activity_monitor <- function(actors, work_items, events = NULL, summary = NULL,
     selected_work_id = NULL, views = c("overview", "activity", "topology"),
     max_events = 500L, width = NULL, height = "640px", element_id = NULL) {
-  htmlwidgets::createWidget("agent_activity_monitor",
-    json_object_payload(agent_activity_monitor_model(actors, work_items, events,
-      summary, selected_work_id, views, max_events)), width = width, height = height,
-    package = "shinycapabilities", elementId = element_id)
+  new_direct_component("agent_activity_monitor",
+    agent_activity_monitor_model(actors, work_items, events, summary,
+      selected_work_id, views, max_events), element_id, width, height)
 }
 
 #' @rdname agent_activity_monitor
 #' @param output_id Shiny output identifier.
 #' @export
 agent_activity_monitor_output <- function(output_id, width = "100%", height = "640px") {
-  htmlwidgets::shinyWidgetOutput(output_id, "agent_activity_monitor", width, height,
-    package = "shinycapabilities")
+  direct_component_output(output_id, "agent_activity_monitor", width, height)
 }
 
 #' @rdname agent_activity_monitor
@@ -197,7 +195,7 @@ agent_activity_monitor_output <- function(output_id, width = "100%", height = "6
 #' @export
 render_agent_activity_monitor <- function(expr, env = parent.frame(), quoted = FALSE) {
   if (!quoted) expr <- substitute(expr)
-  htmlwidgets::shinyRenderWidget(expr, agent_activity_monitor_output, env, quoted = TRUE)
+  render_direct_component(expr, agent_activity_monitor_output, env, quoted = TRUE)
 }
 
 #' Update an agent activity monitor
@@ -207,12 +205,13 @@ render_agent_activity_monitor <- function(expr, env = parent.frame(), quoted = F
 #'
 #' @param session Active Shiny session.
 #' @param output_id Monitor output identifier.
+#' @param revision Optional monotonic transport revision.
 #' @inheritParams agent_activity_monitor
 #' @export
 update_agent_activity_monitor <- function(session, output_id, actors = NULL,
     work_items = NULL, events = NULL, summary = NULL, selected_work_id = NULL,
-    max_events = 500L) {
-  message <- list(id = session$ns(output_id), maxEvents = max(0L, as.integer(max_events)))
+    max_events = 500L, revision = as.integer(Sys.time())) {
+  message <- list(maxEvents = max(0L, as.integer(max_events)))
   actor_records <- if (is.null(actors)) NULL else normalize_agent_activity_actors(actors)
   if (!is.null(actor_records)) message$actors <- actor_records
   if (!is.null(work_items)) {
@@ -225,7 +224,7 @@ update_agent_activity_monitor <- function(session, output_id, actors = NULL,
   if (!is.null(events)) message$events <- normalize_agent_activity_events(events, max_events)
   if (!is.null(summary)) message$summary <- normalize_agent_activity_summary(summary)
   if (!is.null(selected_work_id)) message$selectedWorkId <- as.character(selected_work_id)[[1L]]
-  session$sendCustomMessage("shinycapabilities:agent-activity-monitor:update", message)
+  update_direct_component(session, output_id, "agent_activity_monitor", message, revision)
   invisible(NULL)
 }
 

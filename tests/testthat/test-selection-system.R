@@ -3,8 +3,9 @@ testthat::test_that("Selection System renders one generic Shiny input contract",
     selected = "a", applied = "b", multiple = FALSE, virtual_threshold = 200L)
   html <- as.character(control)
   testthat::expect_match(html, "sc-selection", fixed = TRUE)
-  testthat::expect_identical(htmltools::htmlDependencies(control)[[1]]$name,
-    "shinycapabilities-selection-system")
+  dependency_names <- vapply(htmltools::htmlDependencies(control), `[[`, character(1), "name")
+  testthat::expect_true(all(c("shinycapabilities-browser-runtime",
+    "shinycapabilities-selection-system") %in% dependency_names))
   testthat::expect_match(html, "virtualThreshold", fixed = TRUE)
   testthat::expect_match(html, '"searchable":false', fixed = TRUE)
   testthat::expect_match(html, '"scope":"clear"', fixed = TRUE)
@@ -31,7 +32,7 @@ testthat::test_that("Selection System contract scales across qualification sizes
 })
 
 testthat::test_that("bundled Selection System has one lifecycle owner", {
-  source <- paste(readLines(system.file("htmlwidgets", "lib", "selection-system.js",
+  source <- paste(readLines(system.file("www", "direct-transport", "selection-system.js",
     package = "shinycapabilities"), warn = FALSE), collapse = "\n")
   testthat::expect_equal(length(gregexpr("Shiny.inputBindings.register", source, fixed = TRUE)[[1]]), 1L)
   testthat::expect_match(source, "shinycapabilities.selectionInput", fixed = TRUE)
@@ -42,9 +43,9 @@ testthat::test_that("bundled Selection System has one lifecycle owner", {
 })
 
 testthat::test_that("Selection System portal inherits the host theme contract", {
-  source <- paste(readLines(system.file("htmlwidgets", "src", "selection-system.jsx",
+  source <- paste(readLines(system.file("www", "direct-transport", "src", "selection-system.jsx",
     package = "shinycapabilities"), warn = FALSE), collapse = "\n")
-  css <- paste(readLines(system.file("htmlwidgets", "src", "selection-system.css",
+  css <- paste(readLines(system.file("www", "direct-transport", "src", "selection-system.css",
     package = "shinycapabilities"), warn = FALSE), collapse = "\n")
   testthat::expect_match(source, "portalTheme(host)", fixed = TRUE)
   testthat::expect_match(source, "--sc-selection-${name}", fixed = TRUE)

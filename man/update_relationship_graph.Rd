@@ -17,7 +17,8 @@ update_relationship_graph(
   max_render_nodes = 500L,
   max_metadata_fields = 20L,
   state = NULL,
-  message = NULL
+  message = NULL,
+  revision = as.integer(Sys.time())
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ update_relationship_graph(
 \item{state}{Host-supplied projection state: `ready`, `loading`, or `error`.}
 
 \item{message}{Optional bounded loading or error message.}
+
+\item{revision}{Optional monotonic transport revision.}
 }
 \description{
 Replaces only supplied projections. The browser preserves viewport and

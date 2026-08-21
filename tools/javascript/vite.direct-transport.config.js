@@ -32,11 +32,13 @@ export default defineConfig({
     lib: { entry: resolve(root, entry.source), name: entry.name,
       formats: ["iife"], fileName: () => entry.file },
     rollupOptions: {
-      external: ["split", "inspector"].includes(target) ? ["react", "react-dom", "react-dom/client"] : [],
+      external: ["split", "inspector"].includes(target) ? ["react", "react-dom", "react-dom/client",
+        ...(target === "split" ? ["react-resizable-panels"] : [])] : [],
       output: {
         globals: { react: "ShinyCapabilitiesBrowserRuntimeV1.React",
           "react-dom": "ShinyCapabilitiesBrowserRuntimeV1.ReactDOM",
-          "react-dom/client": "ShinyCapabilitiesBrowserRuntimeV1" },
+          "react-dom/client": "ShinyCapabilitiesBrowserRuntimeV1",
+          "react-resizable-panels": "ShinyCapabilitiesBrowserRuntimeV1.ResizablePanels" },
         assetFileNames: asset => asset.name?.endsWith(".css") ?
           (target === "split" ? "split-pane-direct.css" : target === "inspector" ? "object-inspector.css" : "command-palette-direct.css") : "[name][extname]"
       }

@@ -32,10 +32,10 @@ shinycapabilities::run_interaction_components_demo()
 - `command_palette()` provides keyboard-first discovery and activation of
   host-defined commands without owning command execution.
 
-`command_palette_direct()` is an experimental parallel implementation used to
-qualify a package-owned Shiny transport and shared React runtime. Existing
-component contracts remain the supported path. See the
-[Direct Component Transport 1.0 report](docs/direct_component_transport_1_0.md).
+`command_palette()` now preserves the public contract as a thin alias over the
+qualified direct implementation. See the
+[htmlwidgets Elimination and Component Modernization 1.0 report](docs/htmlwidgets_elimination_1_0.md)
+and [Direct Component Transport 1.0 report](docs/direct_component_transport_1_0.md).
 
 The [Persistent Dynamic UI 1.0 report](docs/persistent_dynamic_ui_1_0.md)
 benchmarks keyed browser patching against repeated `renderUI()` regeneration,
@@ -134,7 +134,7 @@ See the [Structured Object Inspector 1.0 report](docs/structured_object_inspecto
 for the typed schema, update, redaction, accessibility, scale, and promotion
 contracts.
 
-The installed runtime imports `callr`, `digest`, `htmltools`, `htmlwidgets`, `jsonlite`, and `shiny`.
+The installed runtime imports `callr`, `digest`, `htmltools`, `jsonlite`, and `shiny`.
 
 ## License and attribution
 

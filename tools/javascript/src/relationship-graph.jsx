@@ -258,12 +258,21 @@ function RelationshipGraph({ element, initial }) {
   </div>;
 }
 
-HTMLWidgets.widget({ name: "relationship_graph", type: "output", factory(element) {
-  let root;
-  return { renderValue(model) { if (!root) root = createRoot(element);
+window.ShinyCapabilitiesDirectTransport.register("relationship_graph", {
+  mount(element, model) {
+    const root = createRoot(element);
     root.render(<ReactFlowProvider><RelationshipGraph element={element} initial={model}/></ReactFlowProvider>);
-    instances.set(element.id, element); }, resize() {} };
-}});
+    instances.set(element.id, element);
+    return { root, model };
+  },
+  update(handle, patch, context) {
+    handle.model = { ...handle.model, ...patch };
+    context.element._relationshipGraphUpdate?.(patch);
+    return handle;
+  },
+  resize() {},
+  destroy(handle, element) { handle.root.unmount(); instances.delete(element.id); }
+});
 
 if (window.Shiny) window.Shiny.addCustomMessageHandler("shinycapabilities:relationship-graph:update", message => {
   const element = instances.get(message.id) || document.getElementById(message.id);

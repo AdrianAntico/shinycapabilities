@@ -1,9 +1,9 @@
 selection_system_dependency <- function() {
-  htmltools::htmlDependency(
+  list(browser_runtime_dependency(), htmltools::htmlDependency(
     name = "shinycapabilities-selection-system", version = "1.0.0",
-    src = c(file = "htmlwidgets/lib"), package = "shinycapabilities",
+    src = c(file = "www/direct-transport"), package = "shinycapabilities",
     script = "selection-system.js", stylesheet = "selection-system.css"
-  )
+  ))
 }
 
 normalize_selection_groups <- function(groups) {

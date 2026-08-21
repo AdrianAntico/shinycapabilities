@@ -1,8 +1,8 @@
 widget_source_contract_path <- function() {
   candidates <- c(
     testthat::test_path("..", "..", "tools", "javascript", "src", "widget.jsx"),
-    testthat::test_path("..", "..", "inst", "htmlwidgets", "src", "widget.jsx"),
-    system.file("htmlwidgets", "src", "widget.jsx", package = "shinycapabilities")
+    testthat::test_path("..", "..", "inst", "www", "direct-transport", "src", "widget.jsx"),
+    system.file("www", "direct-transport", "src", "widget.jsx", package = "shinycapabilities")
   )
   path <- candidates[file.exists(candidates)][[1L]]
   testthat::expect_true(nzchar(path), info = "The packaged widget source contract is required.")
@@ -194,7 +194,7 @@ testthat::test_that("edge deletion is explicit, selected, and input-focus safe",
 
 testthat::test_that("semantic multi-input handles have distinct stable hit regions", {
   source <- paste(readLines(widget_source_contract_path(), warn = FALSE), collapse = "\n")
-  css <- paste(readLines(system.file("htmlwidgets", "src", "widget.css",
+  css <- paste(readLines(system.file("www", "direct-transport", "src", "widget.css",
     package = "shinycapabilities"), warn = FALSE), collapse = "\n")
 
   testthat::expect_match(source, "PORT_HANDLE_FIRST_OFFSET = 96", fixed = TRUE)

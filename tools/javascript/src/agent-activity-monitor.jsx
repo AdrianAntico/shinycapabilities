@@ -199,12 +199,21 @@ function Monitor({ element, initial }) {
   </div>;
 }
 
-HTMLWidgets.widget({
-  name: "agent_activity_monitor", type: "output", factory(element) {
-    let root;
-    return { renderValue(model) { if (!root) root = createRoot(element); root.render(<Monitor element={element} initial={model}/>);
-      instances.set(element.id, element); }, resize() {} };
-  }
+window.ShinyCapabilitiesDirectTransport.register("agent_activity_monitor", {
+  runtimeMajor: 1,
+  mount(element, model) {
+    const root = createRoot(element);
+    root.render(<Monitor element={element} initial={model}/>);
+    instances.set(element.id, element);
+    return { root, model };
+  },
+  update(handle, patch, context) {
+    handle.model = { ...handle.model, ...patch };
+    context.element._agentActivityUpdate?.(patch);
+    return handle;
+  },
+  resize() {},
+  destroy(handle, element) { handle.root.unmount(); instances.delete(element.id); }
 });
 
 if (window.Shiny) window.Shiny.addCustomMessageHandler("shinycapabilities:agent-activity-monitor:update", message => {

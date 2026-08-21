@@ -24,7 +24,7 @@ registry_payload <- function(registry) {
   })
 }
 
-#' Create a capability canvas htmlwidget
+#' Create a capability canvas
 #' @param registry Capability registry.
 #' @param graph Initial workflow graph.
 #' @param read_only Disable graph editing.
@@ -37,9 +37,7 @@ capability_canvas <- function(
     registry, graph = list(nodes = list(), edges = list()),
     read_only = FALSE, minimap = TRUE, width = NULL, height = "640px",
     element_id = NULL, graph_revision = 0L) {
-  htmlwidgets::createWidget(
-    name = "capability_canvas",
-    x = json_object_payload(list(
+  new_direct_component("capability_canvas", list(
       capabilities = registry_payload(registry),
       graph = normalize_workflow_graph(graph),
       graphRevision = as.integer(graph_revision),
@@ -47,12 +45,7 @@ capability_canvas <- function(
         readOnly = isTRUE(read_only), minimap = isTRUE(minimap),
         bridgeVersion = "1.0.0"
       )
-    )),
-    width = width,
-    height = height,
-    package = "shinycapabilities",
-    elementId = element_id
-  )
+    ), element_id = element_id, width = width, height = height)
 }
 
 #' Shiny output binding for capability_canvas
@@ -60,8 +53,7 @@ capability_canvas <- function(
 #' @param width,height Widget dimensions.
 #' @export
 capability_canvas_output <- function(output_id, width = "100%", height = "640px") {
-  htmlwidgets::shinyWidgetOutput(output_id, "capability_canvas", width, height,
-    package = "shinycapabilities")
+  direct_component_output(output_id, "capability_canvas", width, height)
 }
 
 #' Shiny renderer for capability_canvas
@@ -71,5 +63,5 @@ capability_canvas_output <- function(output_id, width = "100%", height = "640px"
 #' @export
 render_capability_canvas <- function(expr, env = parent.frame(), quoted = FALSE) {
   if (!quoted) expr <- substitute(expr)
-  htmlwidgets::shinyRenderWidget(expr, capability_canvas_output, env, quoted = TRUE)
+  render_direct_component(expr, capability_canvas_output, env, quoted = TRUE)
 }

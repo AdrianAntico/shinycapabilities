@@ -1,9 +1,9 @@
 parameter_workbench_dependency <- function() {
-  htmltools::htmlDependency(
+  list(browser_runtime_dependency(), htmltools::htmlDependency(
     "shinycapabilities-parameter-workbench", "1.0.0",
-    src = c(file = "htmlwidgets/lib"), package = "shinycapabilities",
+    src = c(file = "www/direct-transport"), package = "shinycapabilities",
     script = "parameter-workbench.js", stylesheet = "parameter-workbench.css"
-  )
+  ))
 }
 
 parameter_workbench_types <- function() {

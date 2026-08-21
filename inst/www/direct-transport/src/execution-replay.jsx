@@ -265,10 +265,22 @@ function Replay({ element, initial }) {
   </div>;
 }
 
-HTMLWidgets.widget({ name: "execution_replay", type: "output", factory(element) {
-  let root;
-  return { renderValue(model) { if (!root) root = createRoot(element); root.render(<Replay element={element} initial={model}/>); instances.set(element.id, element); }, resize() {} };
-} });
+window.ShinyCapabilitiesDirectTransport.register("execution_replay", {
+  runtimeMajor: 1,
+  mount(element, model) {
+    const root = createRoot(element);
+    root.render(<Replay element={element} initial={model}/>);
+    instances.set(element.id, element);
+    return { root, model };
+  },
+  update(handle, patch, context) {
+    handle.model = { ...handle.model, ...patch };
+    context.element._executionReplayUpdate?.(patch);
+    return handle;
+  },
+  resize() {},
+  destroy(handle, element) { handle.root.unmount(); instances.delete(element.id); }
+});
 
 if (window.Shiny) window.Shiny.addCustomMessageHandler("shinycapabilities:execution-replay:update", message => {
   const element = instances.get(message.id) || document.getElementById(message.id);

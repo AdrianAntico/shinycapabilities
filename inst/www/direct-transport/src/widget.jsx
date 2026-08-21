@@ -809,24 +809,20 @@ function Canvas({ element, value }) {
   );
 }
 
-function renderWidget(element, value) {
-  if (!element.__shinyCapabilitiesRoot) {
-    element.__shinyCapabilitiesRoot = createRoot(element);
-  }
-  element.__shinyCapabilitiesRoot.render(
-    <ReactFlowProvider><Canvas element={element} value={value} /></ReactFlowProvider>
-  );
-}
-
-window.HTMLWidgets.widget({
-  name: "capability_canvas",
-  type: "output",
-  factory(element) {
-    return {
-      renderValue(value) {
-        renderWidget(element, value);
-      },
-      resize() {}
-    };
+window.ShinyCapabilitiesDirectTransport.register("capability_canvas", {
+  mount(element, value) {
+    const root = createRoot(element);
+    root.render(<ReactFlowProvider><Canvas element={element} value={value} /></ReactFlowProvider>);
+    return { root, model: value };
+  },
+  update(handle, value, context) {
+    handle.model = { ...handle.model, ...value };
+    handle.root.render(<ReactFlowProvider><Canvas element={context.element} value={handle.model} /></ReactFlowProvider>);
+    return handle;
+  },
+  resize() {},
+  destroy(handle, element) {
+    handle.root.unmount();
+    delete element.__shinyCapabilitiesProtocol;
   }
 });

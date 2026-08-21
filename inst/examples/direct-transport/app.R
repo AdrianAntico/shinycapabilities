@@ -11,7 +11,7 @@ ui <- fluidPage(titlePanel("Direct Component Transport 1.0"),
   fluidRow(column(12, actionButton("update", "Update direct"), actionButton("stress", "100 updates"),
     actionButton("toggle", "Hide/show"), actionButton("remove", "Remove/remount"),
     verbatimTextOutput("events", placeholder = TRUE))),
-  fluidRow(column(6, h3("Qualified htmlwidgets palette"), command_palette_output("widget")),
+  fluidRow(column(6, h3("Compatibility palette on direct transport"), command_palette_output("widget")),
     column(6, h3("Parallel direct palette"), uiOutput("direct_slot"))),
   fluidRow(column(6, h3("Namespaced instance"), command_palette_direct_output("nested", height = "300px")),
     column(6, h3("Second direct instance"), command_palette_direct_output("direct_two"))))

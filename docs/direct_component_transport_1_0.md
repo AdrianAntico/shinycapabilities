@@ -2,15 +2,14 @@
 
 ## Decision
 
-**Qualified for incremental migration planning; not qualified for removal.**
-Command Palette and the non-React Persistent Dynamic UI now independently use
-the same package-owned lifecycle, revision, event, resize, and teardown runtime.
-This proves the transport is reusable and framework-neutral. It does not yet
-justify removing `htmlwidgets`: existing widgets require static HTML and
-installed-package, reconnect, CSP, and long-duration memory behavior still need
-qualification. See the [second qualification](persistent_dynamic_ui_1_0.md).
+**Historical qualification, now completed.** Command Palette and the non-React
+Persistent Dynamic UI first proved the package-owned lifecycle, revision, event,
+resize, and teardown runtime. Component Modernization 1.0 subsequently migrated
+the surviving components and removed `htmlwidgets`. See
+[htmlwidgets Elimination and Component Modernization 1.0](htmlwidgets_elimination_1_0.md)
+for the current architecture and qualification contract.
 
-## What htmlwidgets currently owns
+## What htmlwidgets owned at the time of this qualification
 
 | Concern | Current ownership | Direct equivalent | Still needed? |
 |---|---|---|---|
@@ -137,18 +136,18 @@ installed-app qualification item.
 
 ## Static behavior
 
-Static behavior is genuinely used: existing interaction components have R
-Markdown/static examples and `createWidget()` returns portable tags. The
+Static behavior was genuinely used: existing interaction components had R
+Markdown/static examples and `createWidget()` returned portable tags. The
 experiment supplies a minimal equivalent by embedding an application/json
 payload and mounting it on DOM readiness. It intentionally does not recreate
 htmlwidgets sizing policies, knitr hooks, or broad viewer integration. Those
-must be qualified before elimination. A saved standalone HTML page was served
+were qualification requirements before elimination. A saved standalone HTML page was served
 without Shiny and mounted the direct palette with no browser errors.
 
 ## Dependency impact
 
-If every relevant htmlwidget is migrated and static/package qualification
-passes, `htmlwidgets` could leave `Imports`; `shiny`, `htmltools`, and `jsonlite`
+Every relevant component has since migrated and static/package qualification
+now passes, so `htmlwidgets` has left `Imports`; `shiny`, `htmltools`, and `jsonlite`
 remain. Installation still requires no Node.js because built assets ship in
 `inst/www`. Maintainers continue using Node/Vite. Browser payload should fall as
 React-backed components share one runtime, but specialized libraries stay

@@ -40,10 +40,11 @@ testthat::test_that("filters direction and progressive limit are normalized",{
 testthat::test_that("updates namespace and validate complete relationship replacements",{
   f<-graph_fixture();captured<-new.env(parent=emptyenv());session<-list(ns=function(id)paste0("mod-",id),sendCustomMessage=function(type,message){captured$type<-type;captured$message<-message})
   update_relationship_graph(session,"graph",nodes=f$nodes,edges=f$edges,selected_id="b",focus_id="b",filters=list(status="ready"),direction="TB",fit_request="2",state="error",message="Host error")
-  testthat::expect_identical(captured$type,"shinycapabilities:relationship-graph:update")
-  testthat::expect_identical(captured$message$id,"mod-graph");testthat::expect_identical(captured$message$selectedId,"b")
-  testthat::expect_true(captured$message$diagnostics$componentCount>=1L)
-  testthat::expect_identical(captured$message$state,"error");testthat::expect_identical(captured$message$message,"Host error")
+  testthat::expect_identical(captured$type,"shinycapabilities.direct.update")
+  testthat::expect_identical(captured$message$id,"mod-graph");testthat::expect_identical(captured$message$component,"relationship_graph")
+  testthat::expect_identical(captured$message$payload$selectedId,"b")
+  testthat::expect_true(captured$message$payload$diagnostics$componentCount>=1L)
+  testthat::expect_identical(captured$message$payload$state,"error");testthat::expect_identical(captured$message$payload$message,"Host error")
   testthat::expect_error(update_relationship_graph(session,"graph",edges=f$edges),"nodes must accompany edges")
 })
 
@@ -53,8 +54,7 @@ testthat::test_that("self loops are allowed as cycles",{
 })
 
 testthat::test_that("widget assets and installable demo exist",{
-  testthat::expect_true(file.exists(system.file("htmlwidgets","relationship_graph.yaml",package="shinycapabilities")))
-  testthat::expect_true(file.exists(system.file("htmlwidgets","lib","relationship-graph.js",package="shinycapabilities")))
+  testthat::expect_true(file.exists(system.file("www","direct-transport","relationship-graph.js",package="shinycapabilities")))
   testthat::expect_true(file.exists(system.file("examples","relationship-graph","app.R",package="shinycapabilities")))
 })
 

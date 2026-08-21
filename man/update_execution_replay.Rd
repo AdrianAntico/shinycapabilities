@@ -14,7 +14,8 @@ update_execution_replay(
   selected_event_id = NULL,
   mode = c("replace", "append"),
   max_events = 10000L,
-  max_metadata_fields = 24L
+  max_metadata_fields = 24L,
+  revision = as.integer(Sys.time())
 )
 }
 \arguments{
@@ -39,6 +40,8 @@ review, or provenance records.}
 \item{max_events}{Maximum events retained in the browser payload.}
 
 \item{max_metadata_fields}{Maximum metadata fields retained per object and level.}
+
+\item{revision}{Optional monotonic transport revision.}
 }
 \description{
 Replace or append host history. Historical selection is preserved in the

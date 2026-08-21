@@ -20,7 +20,7 @@ testthat::test_that("non-React persistent UI stays runtime-free", {
     vapply(dependencies, `[[`, character(1), "name"))
 })
 
-testthat::test_that("specialized htmlwidgets do not attach the direct runtime", {
+testthat::test_that("specialized engines do not attach the shared React runtime", {
   grid <- data_grid(data.frame(id = 1:2, value = c("a", "b")), row_id = "id")
   graph <- relationship_graph(list(list(id = "a", label = "A", type = "dataset")), list(),
     show_minimap = FALSE)

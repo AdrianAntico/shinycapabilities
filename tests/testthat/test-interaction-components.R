@@ -4,7 +4,7 @@ testthat::test_that("virtual tree browser normalizes nested and flat records", {
       list(id = "child", label = "Child", badge = "table", metadata = list(rows = 10L))
     ))
   ), expanded = "root")
-  testthat::expect_s3_class(widget, "htmlwidget")
+  testthat::expect_s3_class(widget, "shinycapabilities_direct_component")
   testthat::expect_s3_class(widget, "virtual_tree_browser")
   testthat::expect_length(widget$x$nodes, 2L)
   testthat::expect_identical(widget$x$nodes[[2]]$parentId, "root")
@@ -39,7 +39,7 @@ testthat::test_that("command palette preserves bounded host metadata", {
       keywords = c("execute", "module"), shortcut = "Ctrl R",
       metadata = list(capability_id = "analytics.run"))
   ), server_search = TRUE)
-  testthat::expect_s3_class(widget, "htmlwidget")
+  testthat::expect_s3_class(widget, "shinycapabilities_direct_component")
   testthat::expect_s3_class(widget, "command_palette")
   testthat::expect_true(widget$x$options$serverSearch)
   testthat::expect_identical(widget$x$items[[1]]$metadata$capability_id, "analytics.run")
@@ -49,9 +49,9 @@ testthat::test_that("command palette preserves bounded host metadata", {
 })
 
 testthat::test_that("interaction component sources expose semantic accessibility contracts", {
-  source <- paste(readLines(system.file("htmlwidgets", "src", "interaction-components.jsx",
+  source <- paste(readLines(system.file("www", "direct-transport", "src", "interaction-components.jsx",
     package = "shinycapabilities"), warn = FALSE), collapse = "\n")
-  css <- paste(readLines(system.file("htmlwidgets", "src", "interaction-components.css",
+  css <- paste(readLines(system.file("www", "direct-transport", "src", "interaction-components.css",
     package = "shinycapabilities"), warn = FALSE), collapse = "\n")
   testthat::expect_match(source, 'role="tree"', fixed = TRUE)
   testthat::expect_match(source, 'role="treeitem"', fixed = TRUE)
@@ -66,13 +66,9 @@ testthat::test_that("interaction component sources expose semantic accessibility
 })
 
 testthat::test_that("interaction components ship installable bundled dependencies", {
-  for (widget in c("virtual_tree_browser", "command_palette")) {
-    yaml <- system.file("htmlwidgets", paste0(widget, ".yaml"), package = "shinycapabilities")
-    testthat::expect_true(file.exists(yaml))
-    text <- paste(readLines(yaml, warn = FALSE), collapse = "\n")
-    testthat::expect_match(text, "interaction-components.js", fixed = TRUE)
-    testthat::expect_match(text, "interaction-components.css", fixed = TRUE)
-  }
+  root <- system.file("www", "direct-transport", package = "shinycapabilities")
+  testthat::expect_true(file.exists(file.path(root, "interaction-components.js")))
+  testthat::expect_true(file.exists(file.path(root, "command-palette-direct.js")))
   testthat::expect_true(file.exists(system.file("examples", "interaction-components", "app.R",
     package = "shinycapabilities")))
 })

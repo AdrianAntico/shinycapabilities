@@ -51,15 +51,16 @@ testthat::test_that("missing telemetry remains absent", {
 testthat::test_that("updates namespace and bound events deterministically", {
   f<-monitor_fixture(8L);captured<-new.env(parent=emptyenv());session<-list(ns=function(id)paste0("mod-",id),sendCustomMessage=function(type,message){captured$type<-type;captured$message<-message})
   update_agent_activity_monitor(session,"monitor",actors=f$actors,work_items=f$work,events=f$events,max_events=3L,selected_work_id="w2")
-  testthat::expect_identical(captured$type,"shinycapabilities:agent-activity-monitor:update")
+  testthat::expect_identical(captured$type,"shinycapabilities.direct.update")
   testthat::expect_identical(captured$message$id,"mod-monitor")
-  testthat::expect_identical(length(captured$message$events),3L)
-  testthat::expect_identical(captured$message$selectedWorkId,"w2")
+  testthat::expect_identical(captured$message$component,"agent_activity_monitor")
+  testthat::expect_identical(length(captured$message$payload$events),3L)
+  testthat::expect_identical(captured$message$payload$selectedWorkId,"w2")
 })
 
 testthat::test_that("widget source carries virtualization, accessibility, and read-only events", {
-  source<-paste(readLines(system.file("htmlwidgets","src","agent-activity-monitor.jsx",package="shinycapabilities"),warn=FALSE),collapse="\n")
-  css<-paste(readLines(system.file("htmlwidgets","src","agent-activity-monitor.css",package="shinycapabilities"),warn=FALSE),collapse="\n")
+  source<-paste(readLines(system.file("www","direct-transport","src","agent-activity-monitor.jsx",package="shinycapabilities"),warn=FALSE),collapse="\n")
+  css<-paste(readLines(system.file("www","direct-transport","src","agent-activity-monitor.css",package="shinycapabilities"),warn=FALSE),collapse="\n")
   testthat::expect_match(source,"useVirtualizer",fixed=TRUE)
   testthat::expect_match(source,'publish(element, "selection"',fixed=TRUE)
   testthat::expect_match(source,'publish(element, "navigation"',fixed=TRUE)
@@ -72,9 +73,7 @@ testthat::test_that("widget source carries virtualization, accessibility, and re
 })
 
 testthat::test_that("assets and composed demo are installable", {
-  yaml<-system.file("htmlwidgets","agent_activity_monitor.yaml",package="shinycapabilities")
-  testthat::expect_true(file.exists(yaml))
-  testthat::expect_true(file.exists(system.file("htmlwidgets","lib","agent-activity-monitor.js",package="shinycapabilities")))
+  testthat::expect_true(file.exists(system.file("www","direct-transport","agent-activity-monitor.js",package="shinycapabilities")))
   demo<-system.file("examples","agent-activity-monitor","app.R",package="shinycapabilities")
   testthat::expect_true(file.exists(demo));text<-paste(readLines(demo,warn=FALSE),collapse="\n")
   testthat::expect_match(text,"split_pane",fixed=TRUE);testthat::expect_match(text,"virtual_tree_browser",fixed=TRUE);testthat::expect_match(text,"data_grid",fixed=TRUE)

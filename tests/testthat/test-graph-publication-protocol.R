@@ -1,8 +1,8 @@
 widget_protocol_source <- function() {
   candidates <- c(
     testthat::test_path("..", "..", "tools", "javascript", "src", "widget.jsx"),
-    testthat::test_path("..", "..", "inst", "htmlwidgets", "src", "widget.jsx"),
-    system.file("htmlwidgets", "src", "widget.jsx", package = "shinycapabilities")
+    testthat::test_path("..", "..", "inst", "www", "direct-transport", "src", "widget.jsx"),
+    system.file("www", "direct-transport", "src", "widget.jsx", package = "shinycapabilities")
   )
   path <- candidates[file.exists(candidates)][[1L]]
   paste(readLines(path, warn = FALSE), collapse = "\n")

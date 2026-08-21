@@ -174,7 +174,7 @@ testthat::test_that("the default catalog has no package-owned domain vocabulary"
 
 testthat::test_that("versioned and legacy browser bridge aliases are bundled", {
   bundle <- system.file(
-    "htmlwidgets", "lib", "shinycapabilities.js",
+    "www", "direct-transport", "shinycapabilities.js",
     package = "shinycapabilities"
   )
   source <- paste(readLines(
@@ -191,7 +191,7 @@ testthat::test_that("versioned and legacy browser bridge aliases are bundled", {
 })
 
 testthat::test_that("connection acknowledgements use an immediately available pending edge", {
-  source <- paste(readLines(system.file("htmlwidgets", "src", "widget.jsx",
+  source <- paste(readLines(system.file("www", "direct-transport", "src", "widget.jsx",
     package = "shinycapabilities"), warn = FALSE), collapse = "\n")
   testthat::expect_match(source, "pendingConnection.current = edge", fixed = TRUE)
   testthat::expect_match(source,
@@ -202,7 +202,7 @@ testthat::test_that("connection acknowledgements use an immediately available pe
 
 testthat::test_that("core contains no host-domain compatibility vocabulary", {
   roots <- c(
-    "R", file.path("inst", "htmlwidgets"), file.path("inst", "examples"),
+    "R", file.path("inst", "www", "direct-transport"), file.path("inst", "examples"),
     file.path("tests", "testthat")
   )
   files <- unlist(lapply(roots, function(root) {

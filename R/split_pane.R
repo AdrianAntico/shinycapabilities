@@ -1,7 +1,7 @@
 split_pane_dependency <- function() {
-  htmltools::htmlDependency("shinycapabilities-split-pane", "1.0.0",
-    src = c(file = "htmlwidgets/lib"), package = "shinycapabilities",
-    script = "split-pane.js", stylesheet = "split-pane.css")
+  list(browser_runtime_dependency(), htmltools::htmlDependency("shinycapabilities-split-pane", "1.0.0",
+    src = c(file = "www/direct-transport"), package = "shinycapabilities",
+    script = "split-pane.js", stylesheet = "split-pane.css"))
 }
 
 normalize_split_vector <- function(x, ids, name, default = NULL, logical = FALSE) {
@@ -67,7 +67,7 @@ split_pane <- function(input_id, ..., direction = c("horizontal", "vertical"),
     htmltools::tags$div(class = "sc-split-pane-mount"),
     htmltools::tags$script(type = "application/json", `data-for` = input_id,
       htmltools::HTML(model_json)))
-  htmltools::attachDependencies(tag, c(list(split_pane_dependency()), dependencies), append = FALSE)
+  htmltools::attachDependencies(tag, c(split_pane_dependency(), dependencies), append = FALSE)
 }
 
 #' Update an accessible split pane

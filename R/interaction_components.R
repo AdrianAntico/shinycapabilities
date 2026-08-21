@@ -101,9 +101,7 @@ virtual_tree_browser <- function(nodes, selected = NULL, expanded = character(),
                                  empty_message = "No matching items.",
                                  width = NULL, height = "480px",
                                  row_height = 42L, element_id = NULL) {
-  htmlwidgets::createWidget(
-    name = "virtual_tree_browser",
-    x = json_object_payload(list(
+  new_direct_component("virtual_tree_browser", list(
       nodes = normalize_tree_browser_nodes(nodes),
       selected = selected,
       expanded = unname(as.character(expanded)),
@@ -112,20 +110,14 @@ virtual_tree_browser <- function(nodes, selected = NULL, expanded = character(),
         emptyMessage = as.character(empty_message),
         rowHeight = max(28L, as.integer(row_height))
       )
-    )),
-    width = width,
-    height = height,
-    package = "shinycapabilities",
-    elementId = element_id
-  )
+    ), element_id = element_id, width = width, height = height)
 }
 
 #' @rdname virtual_tree_browser
 #' @param output_id Shiny output identifier.
 #' @export
 virtual_tree_browser_output <- function(output_id, width = "100%", height = "480px") {
-  htmlwidgets::shinyWidgetOutput(output_id, "virtual_tree_browser", width, height,
-    package = "shinycapabilities")
+  direct_component_output(output_id, "virtual_tree_browser", width, height)
 }
 
 #' @rdname virtual_tree_browser
@@ -135,7 +127,7 @@ virtual_tree_browser_output <- function(output_id, width = "100%", height = "480
 #' @export
 render_virtual_tree_browser <- function(expr, env = parent.frame(), quoted = FALSE) {
   if (!quoted) expr <- substitute(expr)
-  htmlwidgets::shinyRenderWidget(expr, virtual_tree_browser_output, env, quoted = TRUE)
+  render_direct_component(expr, virtual_tree_browser_output, env, quoted = TRUE)
 }
 
 #' Virtualized command palette
@@ -160,31 +152,17 @@ command_palette <- function(items, placeholder = "Search commands...",
                             empty_message = "No matching commands.",
                             width = NULL, height = "420px",
                             row_height = 54L, element_id = NULL) {
-  htmlwidgets::createWidget(
-    name = "command_palette",
-    x = json_object_payload(list(
-      items = normalize_command_palette_items(items),
-      options = list(
-        placeholder = as.character(placeholder),
-        shortcut = isTRUE(shortcut),
-        serverSearch = isTRUE(server_search),
-        emptyMessage = as.character(empty_message),
-        rowHeight = max(36L, as.integer(row_height))
-      )
-    )),
-    width = width,
-    height = height,
-    package = "shinycapabilities",
-    elementId = element_id
-  )
+  value <- command_palette_direct(items, placeholder, shortcut, server_search,
+    empty_message, width, height, row_height, element_id)
+  class(value) <- unique(c("command_palette", class(value)))
+  value
 }
 
 #' @rdname command_palette
 #' @param output_id Shiny output identifier.
 #' @export
 command_palette_output <- function(output_id, width = "100%", height = "420px") {
-  htmlwidgets::shinyWidgetOutput(output_id, "command_palette", width, height,
-    package = "shinycapabilities")
+  command_palette_direct_output(output_id, width, height)
 }
 
 #' @rdname command_palette
@@ -194,7 +172,7 @@ command_palette_output <- function(output_id, width = "100%", height = "420px") 
 #' @export
 render_command_palette <- function(expr, env = parent.frame(), quoted = FALSE) {
   if (!quoted) expr <- substitute(expr)
-  htmlwidgets::shinyRenderWidget(expr, command_palette_output, env, quoted = TRUE)
+  render_direct_component(expr, command_palette_output, env, quoted = TRUE)
 }
 
 #' Run the interaction-components demo

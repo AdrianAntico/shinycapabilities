@@ -14,11 +14,11 @@ gzip_size <- function(path) {
   size <- file.info(output)$size; unlink(output); as.numeric(size)
 }
 
-roots <- c("inst/htmlwidgets/lib", "inst/www/direct-transport")
+roots <- "inst/www/direct-transport"
 files <- unlist(lapply(roots, function(root) list.files(root, "\\.js$", full.names = TRUE)))
 results <- data.frame(
   file = basename(files),
-  architecture = ifelse(grepl("direct-transport", files, fixed = TRUE), "direct", "htmlwidgets"),
+  architecture = "direct",
   raw_bytes = as.numeric(file.info(files)$size),
   gzip_bytes = vapply(files, gzip_size, numeric(1)),
   stringsAsFactors = FALSE

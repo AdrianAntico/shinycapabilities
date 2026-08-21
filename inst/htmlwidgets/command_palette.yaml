@@ -1,6 +1,0 @@
-dependencies:
-  - name: shinycapabilities-interaction-components
-    version: 1.0.0
-    src: htmlwidgets/lib
-    script: interaction-components.js
-    stylesheet: interaction-components.css

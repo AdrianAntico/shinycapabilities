@@ -1,8 +1,7 @@
 #' Experimental direct browser component
 #'
 #' Construct a host-neutral component payload for the package-owned direct
-#' Shiny transport. This is an experimental infrastructure API; existing
-#' htmlwidgets components remain unchanged.
+#' Shiny transport. This is the package's canonical browser transport.
 #'
 #' @param component Registered browser component name.
 #' @param payload Named list sent to the browser.
@@ -10,7 +9,8 @@
 #'   ids are supplied by [direct_component_output()].
 #' @return An object of class `shinycapabilities_direct_component`.
 #' @keywords internal
-new_direct_component <- function(component, payload, element_id = NULL) {
+new_direct_component <- function(component, payload, element_id = NULL,
+                                 width = NULL, height = NULL) {
   component <- as.character(component)
   if (length(component) != 1L || !nzchar(component)) {
     stop("component must be one non-empty string.", call. = FALSE)
@@ -22,12 +22,16 @@ new_direct_component <- function(component, payload, element_id = NULL) {
       stop("element_id must be NULL or one non-empty string.", call. = FALSE)
     }
   }
+  normalized <- json_object_payload(payload)
   structure(list(
     component = component,
-    payload = json_object_payload(payload),
+    payload = normalized,
+    x = normalized,
     element_id = element_id,
+    width = width,
+    height = height,
     revision = 1L
-  ), class = "shinycapabilities_direct_component")
+  ), class = c(component, "shinycapabilities_direct_component"))
 }
 
 browser_runtime_dependency <- function() {
@@ -35,7 +39,7 @@ browser_runtime_dependency <- function() {
   if (!nzchar(root)) root <- file.path("inst", "www", "direct-transport")
   htmltools::htmlDependency(
     name = "shinycapabilities-browser-runtime",
-    version = "1.0.0",
+    version = "1.1.0",
     src = c(file = normalizePath(root, winslash = "/", mustWork = TRUE)),
     script = "browser-runtime-v1.js"
   )
@@ -61,6 +65,12 @@ direct_component_dependency <- function(component) {
     split_pane_direct = "split-pane-direct.js",
     code_editor = "code-editor.js",
     object_inspector = "object-inspector.js",
+    capability_canvas = "shinycapabilities.js",
+    virtual_tree_browser = "interaction-components.js",
+    data_grid = "data-grid.js",
+    agent_activity_monitor = "agent-activity-monitor.js",
+    relationship_graph = "relationship-graph.js",
+    execution_replay = "execution-replay.js",
     stop("Unknown direct component: ", component, call. = FALSE))
   htmltools::htmlDependency(
     name = paste0("shinycapabilities-direct-", gsub("_", "-", component)),
@@ -75,12 +85,20 @@ direct_component_dependency <- function(component) {
       split_pane_direct = "split-pane-direct.css",
       code_editor = "code-editor.css",
       object_inspector = "object-inspector.css",
+      capability_canvas = "shinycapabilities.css",
+      virtual_tree_browser = "interaction-components.css",
+      data_grid = "data-grid.css",
+      agent_activity_monitor = "agent-activity-monitor.css",
+      relationship_graph = "relationship-graph.css",
+      execution_replay = "execution-replay.css",
       NULL)
   )
 }
 
 direct_transport_dependencies <- function(component) {
-  uses_runtime <- component %in% c("command_palette_direct", "split_pane_direct", "object_inspector")
+  uses_runtime <- component %in% c("command_palette_direct", "split_pane_direct",
+    "object_inspector", "virtual_tree_browser", "agent_activity_monitor",
+    "execution_replay")
   c(if (uses_runtime) list(browser_runtime_dependency()) else list(),
     list(direct_transport_core_dependency(), direct_component_dependency(component)))
 }
@@ -117,7 +135,8 @@ as.tags.shinycapabilities_direct_component <- function(x, ...) {
   id <- x$element_id %||% paste0("sc-direct-", substr(stable_hash(list(
     x$component, x$payload
   )), 1L, 12L))
-  direct_component_tag(id, x$component, static_payload = list(
+  direct_component_tag(id, x$component, height = x$height %||% "420px",
+    width = x$width %||% "100%", static_payload = list(
     component = x$component, payload = x$payload, revision = x$revision
   ))
 }

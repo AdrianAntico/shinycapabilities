@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 const publishInteractionSources = {
   name: "publish-interaction-component-sources",
   closeBundle() {
-    const target = resolve(import.meta.dirname, "../../inst/htmlwidgets/src");
+    const target = resolve(import.meta.dirname, "../../inst/www/direct-transport/src");
     mkdirSync(target, { recursive: true });
     copyFileSync(resolve(import.meta.dirname, "src/interaction-components.jsx"),
       resolve(target, "interaction-components.jsx"));
@@ -19,7 +19,7 @@ export default defineConfig({
   plugins: [react(), publishInteractionSources],
   define: { "process.env.NODE_ENV": JSON.stringify("production") },
   build: {
-    outDir: "../../inst/htmlwidgets/lib",
+    outDir: "../../inst/www/direct-transport",
     emptyOutDir: false,
     cssCodeSplit: false,
     lib: {
@@ -29,7 +29,12 @@ export default defineConfig({
       fileName: () => "interaction-components.js"
     },
     rollupOptions: {
-      output: { assetFileNames: asset => asset.name?.endsWith(".css") ? "interaction-components.css" : "[name][extname]" }
+      external: ["react", "react-dom", "react-dom/client", "@tanstack/react-virtual"],
+      output: { globals: { react: "ShinyCapabilitiesBrowserRuntimeV1.React",
+          "react-dom": "ShinyCapabilitiesBrowserRuntimeV1.ReactDOM",
+          "react-dom/client": "ShinyCapabilitiesBrowserRuntimeV1",
+          "@tanstack/react-virtual": "ShinyCapabilitiesBrowserRuntimeV1" },
+        assetFileNames: asset => asset.name?.endsWith(".css") ? "interaction-components.css" : "[name][extname]" }
     }
   }
 });

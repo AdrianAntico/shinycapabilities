@@ -80,16 +80,16 @@ testthat::test_that("update messages are namespaced and mode explicit", {
     sendCustomMessage = function(type, message) { captured$type <- type; captured$message <- message })
   update_execution_replay(session, "replay", events = f$events[6], snapshots = f$snapshots[4],
     related_records = f$related[3], mode = "append")
-  testthat::expect_identical(captured$type, "shinycapabilities:execution-replay:update")
+  testthat::expect_identical(captured$type, "shinycapabilities.direct.update")
   testthat::expect_identical(captured$message$id, "module-replay")
-  testthat::expect_identical(captured$message$mode, "append")
-  testthat::expect_identical(captured$message$events[[1]]$event_id, "e6")
+  testthat::expect_identical(captured$message$component, "execution_replay")
+  testthat::expect_identical(captured$message$payload$mode, "append")
+  testthat::expect_identical(captured$message$payload$events[[1]]$event_id, "e6")
 })
 
 testthat::test_that("assets, demo, and public widget helpers are installable", {
-  testthat::expect_true(file.exists(system.file("htmlwidgets", "execution_replay.yaml", package = "shinycapabilities")))
-  testthat::expect_true(file.exists(system.file("htmlwidgets", "lib", "execution-replay.js", package = "shinycapabilities")))
-  testthat::expect_true(file.exists(system.file("htmlwidgets", "lib", "execution-replay.css", package = "shinycapabilities")))
+  testthat::expect_true(file.exists(system.file("www", "direct-transport", "execution-replay.js", package = "shinycapabilities")))
+  testthat::expect_true(file.exists(system.file("www", "direct-transport", "execution-replay.css", package = "shinycapabilities")))
   demo <- system.file("examples", "execution-replay", "app.R", package = "shinycapabilities")
   testthat::expect_true(file.exists(demo))
   testthat::expect_true(all(vapply(c(execution_replay, execution_replay_output,

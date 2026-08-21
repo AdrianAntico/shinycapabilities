@@ -36,7 +36,6 @@ const compactFormatter = new Intl.NumberFormat(undefined, { notation: "compact",
 function rowRecords(value) {
   if (Array.isArray(value)) return value;
   if (!value || typeof value !== "object") return [];
-  if (window.HTMLWidgets?.dataframeToD3) return window.HTMLWidgets.dataframeToD3(value);
   const fields = Object.keys(value);
   const count = fields.length ? value[fields[0]].length : 0;
   return Array.from({ length: count }, (_, index) => Object.fromEntries(fields.map(field => [field, value[field][index]])));
@@ -236,37 +235,45 @@ function renderGrid(element, payload) {
   }, { signal: controller.signal });
 }
 
-window.HTMLWidgets.widget({
-  name: "data_grid",
-  type: "output",
-  factory(element) {
-    return {
-      renderValue(payload) { renderGrid(element, payload); },
-      resize() { gridInstances.get(element)?.api?.doLayout(); }
-    };
+function updateGrid(element, message) {
+  const instance = gridInstances.get(element);
+  if (!instance?.api) return;
+  if (message.rows) {
+    const rows = rowRecords(message.rows);
+    instance.api.setGridOption("rowData", rows);
+    instance.controls.status.textContent = `${rows.length.toLocaleString()} rows`;
+  }
+  if (message.quickFilter !== undefined) {
+    instance.api.setGridOption("quickFilterText", message.quickFilter);
+    if (instance.controls.search) instance.controls.search.value = message.quickFilter;
+  }
+  if (message.columnState) instance.api.applyColumnState({ state: message.columnState, applyOrder: true });
+  if (message.selectedRows) {
+    const selected = new Set(message.selectedRows);
+    instance.api.forEachNode(node => node.setSelected(selected.has(node.id)));
+  }
+  if (message.loading === true) instance.api.showLoadingOverlay();
+  if (message.loading === false) instance.api.hideOverlay();
+}
+
+window.ShinyCapabilitiesDirectTransport.register("data_grid", {
+  mount(element, payload) { renderGrid(element, payload); return { element, model: payload }; },
+  update(handle, patch) { handle.model = { ...handle.model, ...patch }; updateGrid(handle.element, patch); return handle; },
+  resize(handle) {
+    const api = gridInstances.get(handle.element)?.api;
+    if (typeof api?.doLayout === "function") api.doLayout();
+  },
+  destroy(handle) {
+    const instance = gridInstances.get(handle.element);
+    instance?.controller?.abort();
+    instance?.api?.destroy();
+    gridInstances.delete(handle.element);
   }
 });
 
 if (window.Shiny?.addCustomMessageHandler) {
   window.Shiny.addCustomMessageHandler("shinycapabilities:data-grid:update", message => {
     const element = document.getElementById(message.id);
-    const instance = gridInstances.get(element);
-    if (!instance?.api) return;
-    if (message.rows) {
-      const rows = rowRecords(message.rows);
-      instance.api.setGridOption("rowData", rows);
-      instance.controls.status.textContent = `${rows.length.toLocaleString()} rows`;
-    }
-    if (message.quickFilter !== undefined) {
-      instance.api.setGridOption("quickFilterText", message.quickFilter);
-      if (instance.controls.search) instance.controls.search.value = message.quickFilter;
-    }
-    if (message.columnState) instance.api.applyColumnState({ state: message.columnState, applyOrder: true });
-    if (message.selectedRows) {
-      const selected = new Set(message.selectedRows);
-      instance.api.forEachNode(node => node.setSelected(selected.has(node.id)));
-    }
-    if (message.loading === true) instance.api.showLoadingOverlay();
-    if (message.loading === false) instance.api.hideOverlay();
+    updateGrid(element, message);
   });
 }

@@ -21,7 +21,6 @@ Imports:
     callr,
     digest,
     htmltools,
-    htmlwidgets,
     jsonlite,
     shiny
 Suggests:
