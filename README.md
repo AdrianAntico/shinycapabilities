@@ -121,6 +121,19 @@ shinycapabilities::run_code_editor_demo()
 See the [Monaco Editor 1.0 report](docs/monaco_editor_1_0.md) for the state,
 event, accessibility, worker, and promotion contracts.
 
+## Structured object inspector lab
+
+`object_inspector()` provides a persistent, searchable, virtualized, and
+redaction-safe projection over nested analytical objects.
+
+```r
+shinycapabilities::run_object_inspector_demo()
+```
+
+See the [Structured Object Inspector 1.0 report](docs/structured_object_inspector_1_0.md)
+for the typed schema, update, redaction, accessibility, scale, and promotion
+contracts.
+
 The installed runtime imports `callr`, `digest`, `htmltools`, `htmlwidgets`, `jsonlite`, and `shiny`.
 
 ## License and attribution

@@ -60,6 +60,7 @@ direct_component_dependency <- function(component) {
     persistent_ui = "persistent-ui.js",
     split_pane_direct = "split-pane-direct.js",
     code_editor = "code-editor.js",
+    object_inspector = "object-inspector.js",
     stop("Unknown direct component: ", component, call. = FALSE))
   htmltools::htmlDependency(
     name = paste0("shinycapabilities-direct-", gsub("_", "-", component)),
@@ -73,12 +74,13 @@ direct_component_dependency <- function(component) {
       persistent_ui = "persistent-ui.css",
       split_pane_direct = "split-pane-direct.css",
       code_editor = "code-editor.css",
+      object_inspector = "object-inspector.css",
       NULL)
   )
 }
 
 direct_transport_dependencies <- function(component) {
-  uses_runtime <- component %in% c("command_palette_direct", "split_pane_direct")
+  uses_runtime <- component %in% c("command_palette_direct", "split_pane_direct", "object_inspector")
   c(if (uses_runtime) list(browser_runtime_dependency()) else list(),
     list(direct_transport_core_dependency(), direct_component_dependency(component)))
 }
