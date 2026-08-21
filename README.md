@@ -12,6 +12,10 @@ install.packages("shinycapabilities_0.1.0.tar.gz", repos = NULL, type = "source"
 
 Node.js is not required to install or use the package; required browser assets are bundled.
 
+The [Complete User-Facing Shiny UI Elimination Program](docs/zero_visible_stock_shiny_program.md)
+records the current Workstation primitive inventory, foundational browser-control
+APIs, UX contract, remaining gaps, and machine-readable Grok migration matrix.
+
 ## Smoke example
 
 ```r

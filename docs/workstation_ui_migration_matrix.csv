@@ -1,0 +1,36 @@
+current_primitive,observed_count,replacement,api_seam,ux_gain,runtime_gain,migration_risk,status
+textInput,242,browser_text_field,input value preserved,consistent validation and focus,smaller native binding,low,implemented
+numericInput,114,browser_numeric_field,numeric scalar preserved,consistent constraints and errors,smaller native binding,low,implemented
+passwordInput,2,browser_secret_field,string value preserved,secret-specific autocomplete semantics,smaller native binding,medium,implemented
+textAreaInput,34,browser_textarea,string value preserved,resizable coherent field,smaller native binding,low,implemented
+selectInput,243,selection_input,selected values adapter,search virtualization stale and dirty state,bounded events and virtualization,medium,already covered
+checkboxInput,68,browser_checkbox,logical value preserved,consistent native semantics,smaller native binding,low,implemented
+checkboxGroupInput,6,Selection System multi-select,character vector adapter,search and high-cardinality support,virtualized options,medium,already covered
+radioButtons,2,browser_radio_group,scalar value preserved,coherent keyboard-native choices,smaller native binding,low,implemented
+sliderInput,2,browser_slider,numeric value preserved,live value and accessible range,smaller native binding,low,implemented
+actionButton,358,browser_action_button,integer click count preserved,action hierarchy loading and focus,one native action binding,low,implemented
+actionLink,1,browser_action_link,integer click count preserved,coherent low-emphasis action,one native action binding,low,implemented
+tags$button,114,browser_action_button or purpose-built component,existing intent adapter,consistent action hierarchy and focus,shared native action binding,medium,planned migration
+tags$input,27,browser control or purpose-built component,type-specific value adapter,consistent validation and accessibility,shared native input binding,medium,planned migration
+tags$select/tags$textarea,4,Selection System or browser_textarea,value adapter,consistent field semantics,shared bounded binding,medium,planned migration
+fileInput,3,future browser_file_drop,Shiny upload record preserved,drop plus keyboard file selection,no duplicate upload protocol,high,planned
+textOutput,19,future browser_scalar_output,rendered scalar adapter,format and status semantics,in-place keyed update,medium,planned
+verbatimTextOutput,12,Monaco or future browser_preformatted_output,text/code adapter,copy and overflow behavior,in-place update,medium,partly covered
+tableOutput,4,semantic small table or data_grid,records adapter,accessible small table or dense grid,virtualization where needed,medium,partly covered
+plotOutput,0,AutoPlots plus future plot_shell,artifact/widget seam,resize fullscreen inspect export,ResizeObserver lifecycle,medium,delegated/planned
+imageOutput,0,future media_shell,URL/content adapter,loading error zoom and alt text,lazy loading,medium,planned
+downloadButton,5,future browser_download_action,download handler URL seam,progress and artifact semantics,native browser download,medium,planned
+uiOutput,384,Persistent Dynamic UI or purpose-built projection,keyed schema adapter,preserved browser state and focus,incremental patches,high,partly covered
+renderUI,385,Persistent Dynamic UI or purpose-built projection,keyed schema adapter,preserved browser state and focus,incremental patches,high,partly covered
+showNotification,37,future notification_center,bounded notification records,queue actions and accessible announcements,in-place bounded queue,medium,planned
+modalDialog/showModal,4,future overlay_system,intent and result events,focus trap escape and destructive confirmation,client lifecycle,high,planned
+progress UI,0 direct calls,browser_progress,normalized progress projection,truthful determinate/indeterminate states,native progress element,low,implemented
+tabPanel,26,future navigation_system,route/tab IDs adapter,roving focus overflow and persistence,keyed client navigation,high,planned
+tabsetPanel,3,future navigation_system,route/tab IDs adapter,coherent responsive navigation,keyed client navigation,high,planned
+update*Input,84,update_browser_control/update_selection_input,existing update intent adapter,one consistent update contract,in-place bounded update,medium,partly covered
+updateTabsetPanel,6,future navigation_system update,selected route adapter,preserved focus and route state,keyed client navigation,high,planned
+accordions/disclosure,0 direct calls,future disclosure_system,keyed section records,keyboard and persisted expansion,in-place state,medium,planned
+reactable helpers,shared helper,data_grid or semantic table,record/selection adapter,typed filtering and dense keyboard UX,virtualized direct engine,high,already covered
+plot widgets,AutoPlots owned,future plot_shell around AutoPlots,artifact output unchanged,consistent resize fullscreen and actions,no analytical rerender,medium,delegated
+code editor,Code Runner seam,code_editor,code/value adapter,Monaco editing and diagnostics,in-place model update,medium,already covered
+object/details,large dynamic surface,object_inspector,normalized value tree,search copy redaction and types,virtualized inspection,medium,already covered
