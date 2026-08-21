@@ -16,6 +16,10 @@ The [Complete User-Facing Shiny UI Elimination Program](docs/zero_visible_stock_
 records the current Workstation primitive inventory, foundational browser-control
 APIs, UX contract, remaining gaps, and machine-readable Grok migration matrix.
 
+The [Analytics Workstation UI handoff](docs/analytics_workstation_ui_handoff.md)
+is the durable integration entry point for ownership boundaries, qualified
+capabilities, dependency direction, migration rules, and remaining UI gaps.
+
 ## Smoke example
 
 ```r
