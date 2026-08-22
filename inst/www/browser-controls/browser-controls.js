@@ -131,7 +131,7 @@
     const actions = new Shiny.InputBinding();
     actions.find = (scope) => scope.querySelectorAll(".sc-browser-action[data-sc-action]");
     actions.getId = (button) => button.id;
-    actions.getValue = (button) => actionCounts.get(button) || 0;
+    actions.getValue = (button) => actionCounts.has(button) ? actionCounts.get(button) : null;
     actions.subscribe = (button, callback) => {
       const listener = () => {
         actionCounts.set(button, (actionCounts.get(button) || 0) + 1);
