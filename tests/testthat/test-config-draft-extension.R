@@ -51,8 +51,8 @@ testthat::test_that("inspector apply does not coalesce explicit empty drafts", {
 })
 
 testthat::test_that("selection changes publish explicit empty values", {
-  source <- paste(readLines(testthat::test_path("..", "..", "inst", "www", "direct-transport", "src", "selection-system.jsx"), warn = FALSE), collapse = "\n")
-  module_source <- paste(readLines(testthat::test_path("..", "..", "R", "module.R"), warn = FALSE), collapse = "\n")
+  source <- paste(readLines(qualification_path("inst", "www", "direct-transport", "src", "selection-system.jsx"), warn = FALSE), collapse = "\n")
+  module_source <- paste(readLines(qualification_path("R", "module.R"), warn = FALSE), collapse = "\n")
   testthat::expect_match(source, "`${host.id}_change`", fixed = TRUE)
   testthat::expect_match(source, "value: normalized", fixed = TRUE)
   testthat::expect_match(module_source, "config_input_value", fixed = TRUE)

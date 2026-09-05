@@ -5,6 +5,7 @@
   const components = new Map();
   const instances = new Map();
   const pending = new Map();
+  const earlyUpdates = new WeakMap();
   const metrics = { mounts: 0, updates: 0, resizes: 0, destroys: 0, errors: 0 };
   let bindingRegistered = false;
   let observer = null;
@@ -33,8 +34,10 @@
     console.error("[shinycapabilities direct transport]", error);
   };
   const destroy = element => {
+    earlyUpdates.delete(element);
+    if (pending.get(element.id)?.element === element) pending.delete(element.id);
     const instance = instances.get(element.id);
-    if (!instance) return;
+    if (!instance || instance.element !== element) return;
     try { instance.resizeObserver?.disconnect(); instance.definition.destroy?.(instance.handle, element); }
     catch (error) { console.warn("Direct component teardown failed", error); }
     instances.delete(element.id);
@@ -52,6 +55,10 @@
       }
       pending.delete(element.id);
       const current = instances.get(element.id);
+      if (current && current.element !== element) {
+        if (current.element.isConnected) throw new Error(`Duplicate component id: ${element.id}`);
+        destroy(current.element);
+      }
       if (current && current.type !== type) destroy(element);
       const active = instances.get(element.id);
       if (active) {
@@ -59,7 +66,8 @@
           element, emit: (suffix, payload) => emit(element, suffix, payload), source,
           revision: value.revision
         }) || active.handle;
-        active.revision = value.revision;
+        // Full Shiny renders are authoritative replacements, but cannot lower the patch watermark.
+        active.revision = Math.max(Number(active.revision || 0), Number(value.revision || 0));
         metrics.updates += 1;
       } else {
         element.setAttribute("aria-busy", "true");
@@ -67,28 +75,52 @@
           element, emit: (suffix, payload) => emit(element, suffix, payload), source,
           revision: value.revision
         });
+        const instance = { element, type, definition, handle, revision: value.revision };
         const resizeObserver = new ResizeObserver(entries => {
           const entry = entries[0];
-          definition.resize?.(handle, entry?.contentRect, element);
+          definition.resize?.(instance.handle, entry?.contentRect, element);
           metrics.resizes += 1;
         });
+        instance.resizeObserver = resizeObserver;
+        instances.set(element.id, instance);
         resizeObserver.observe(element);
-        instances.set(element.id, { type, definition, handle, resizeObserver,
-          revision: value.revision });
         metrics.mounts += 1;
       }
+      // Renderers may replace className; retain the binding/lifecycle marker.
+      element.classList?.add("sc-direct-component-output");
       element.setAttribute("aria-busy", "false");
-      element.dataset.scDirectRevision = String(value.revision ?? "");
+      element.dataset.scDirectRevision = String(instances.get(element.id)?.revision ?? "");
       element.dataset.scDirectLastMs = (now() - started).toFixed(3);
+      const early = earlyUpdates.get(element);
+      if (early) {
+        earlyUpdates.delete(element);
+        early.forEach(message => applyUpdate(element, message));
+      }
     } catch (error) { showError(element, error); }
   };
   const mountStatic = root => {
     root.querySelectorAll?.(".sc-direct-component-output [data-sc-direct-payload]").forEach(script => {
       const element = script.parentElement;
-      if (!element || instances.has(element.id)) return;
+      if (!element || instances.get(element.id)?.element === element) return;
       try { deliver(element, JSON.parse(script.textContent || "{}"), "static"); }
       catch (error) { showError(element, error); }
     });
+  };
+  const applyUpdate = (element, message) => {
+    const current = instances.get(element.id);
+    if (!current || current.element !== element) {
+      const previous = earlyUpdates.get(element);
+      if (previous?.length && Number(message.revision) < Number(previous.at(-1).revision)) return;
+      // Operation lists are not safely coalescible: preserve accepted arrival order.
+      earlyUpdates.set(element, [...(previous || []), message]);
+      return;
+    }
+    if (Number(message.revision) < Number(current.revision || 0)) return;
+    const existing = current.handle?.model || {};
+    deliver(element, { component: message.component, revision: message.revision,
+      payload: { ...existing, ...(message.payload || {}),
+        options: { ...(existing.options || {}), ...(message.payload?.options || {}) } }
+    }, "custom-message");
   };
   const registerBinding = () => {
     if (bindingRegistered || !window.Shiny?.OutputBinding || !window.jQuery) return;
@@ -107,28 +139,31 @@
     window.Shiny.addCustomMessageHandler("shinycapabilities.direct.update", message => {
       const element = findElement(message.id);
       if (!element) return;
-      const current = instances.get(message.id);
-      if (current && Number(message.revision) < Number(current.revision || 0)) return;
-      const existing = current?.handle?.model || {};
-      const payload = { ...existing, ...(message.payload || {}),
-        options: { ...(existing.options || {}), ...(message.payload?.options || {}) } };
-      deliver(element, { component: message.component, payload, revision: message.revision }, "custom-message");
+      applyUpdate(element, message);
     });
     bindingRegistered = true;
   };
   const observeRemoval = () => {
     if (observer || !document.body) return;
-    observer = new MutationObserver(records => records.forEach(record => record.removedNodes.forEach(node => {
-      if (!(node instanceof Element)) return;
-      if (node.matches?.(".sc-direct-component-output")) destroy(node);
-      node.querySelectorAll?.(".sc-direct-component-output").forEach(destroy);
-    })));
+    observer = new MutationObserver(records => {
+      // A DOM move is not an unmount. Retire detached identities before mounting replacements.
+      records.forEach(record => record.removedNodes.forEach(node => {
+        if (!(node instanceof Element) || node.isConnected) return;
+        if (node.matches?.(".sc-direct-component-output")) destroy(node);
+        node.querySelectorAll?.(".sc-direct-component-output").forEach(destroy);
+      }));
+      records.forEach(record => record.addedNodes.forEach(node => {
+        if (!(node instanceof Element) || !node.isConnected) return;
+        mountStatic(node);
+        if (node.matches?.("[data-sc-direct-payload]")) mountStatic(node.parentElement);
+      }));
+    });
     observer.observe(document.body, { childList: true, subtree: true });
   };
   const initialize = () => { registerBinding(); observeRemoval(); mountStatic(document); };
 
   window.ShinyCapabilitiesDirectTransport = {
-    version: "1.1.0",
+    version: "1.1.1",
     register(name, definition) {
       if (!name || !definition?.mount || !definition?.update || !definition?.destroy) {
         throw new Error("Direct components require mount, update, and destroy methods.");

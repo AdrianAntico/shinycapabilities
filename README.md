@@ -151,3 +151,16 @@ The installed runtime imports `callr`, `digest`, `htmltools`, `jsonlite`, and `s
 ## License and attribution
 
 The package is available under the [MIT license](LICENSE). Bundled third-party software is listed in [DEPENDENCY-LICENSES.md](inst/docs/DEPENDENCY-LICENSES.md).
+# Building a composed application
+
+For linked tree/palette/grid selection, inspectable records, explicitly applied
+parameters, a plot, and a resizable workspace, see
+[`inst/examples/equipment-review/app.R`](inst/examples/equipment-review/app.R).
+It uses ordinary Shiny reactivity and existing public components, not a second
+application-state framework.
+
+The current framework audit, replacement boundaries, and qualification limits are
+in [UI_FRAMEWORK_AUDIT_IMPLEMENTATION_1_0.md](UI_FRAMEWORK_AUDIT_IMPLEMENTATION_1_0.md).
+The [public surface inventory](UI_FRAMEWORK_PUBLIC_SURFACE.csv) includes all exports,
+including compatibility paths. This is not a declaration that every component is
+mobile, screen-reader, or production-scale qualified.

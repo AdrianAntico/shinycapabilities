@@ -61,8 +61,8 @@ testthat::test_that("updates namespace through the standard Shiny input channel"
 })
 
 testthat::test_that("browser assets implement bounded lifecycle and native behavior", {
-  js <- paste(readLines(testthat::test_path("..", "..", "inst", "www", "browser-controls", "browser-controls.js"), warn = FALSE), collapse = "\n")
-  css <- paste(readLines(testthat::test_path("..", "..", "inst", "www", "browser-controls", "browser-controls.css"), warn = FALSE), collapse = "\n")
+  js <- paste(readLines(qualification_path("inst", "www", "browser-controls", "browser-controls.js"), warn = FALSE), collapse = "\n")
+  css <- paste(readLines(qualification_path("inst", "www", "browser-controls", "browser-controls.css"), warn = FALSE), collapse = "\n")
   testthat::expect_match(js, "Shiny.InputBinding", fixed = TRUE)
   testthat::expect_match(js, "unsubscribe", fixed = TRUE)
   testthat::expect_match(js, "removeEventListener", fixed = TRUE)

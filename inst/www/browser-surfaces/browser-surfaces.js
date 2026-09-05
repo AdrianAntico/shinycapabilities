@@ -45,7 +45,7 @@
 
   function closeOverlay(root, restore = true) {
     const current = state.get(root);
-    if (!current || !current.panel) return;
+    if (!current?.open || !current.panel) return;
     current.panel.hidden = true;
     if (current.placeholder) current.placeholder.replaceWith(current.panel);
     current.trigger?.setAttribute("aria-expanded", "false");
@@ -60,11 +60,11 @@
     });
     const placeholder = document.createComment("sc-overlay-home");
     panel.replaceWith(placeholder);
-    ensureLayer().appendChild(panel);
+    (root.closest('dialog[open]') || ensureLayer()).appendChild(panel);
     panel.hidden = false;
     trigger.setAttribute("aria-expanded", "true");
     place(trigger, panel, placement || "bottom-start");
-    state.set(root, { open: true, panel, trigger, placeholder });
+    state.set(root, Object.assign(state.get(root) || {}, { open: true, panel, trigger, placeholder }));
     const first = focusables(panel)[0];
     if (first && root.dataset.scSurface === "context-menu") first.focus();
     emit(root, "open", {});
@@ -320,9 +320,19 @@
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
+    const overlays = [...document.querySelectorAll('[data-sc-surface="popover"], [data-sc-surface="context-menu"]')]
+      .filter(root => state.get(root)?.open);
+    if (overlays.length) {
+      event.preventDefault();
+      closeOverlay(overlays[overlays.length - 1]);
+      return;
+    }
     const dialogs = [...document.querySelectorAll('dialog.sc-dialog[open][data-dismissible="true"]')];
-    if (dialogs.length) closeDialog(dialogs[dialogs.length - 1], "escape");
-    document.querySelectorAll('[data-sc-surface="popover"], [data-sc-surface="context-menu"]').forEach((root) => closeOverlay(root));
+    if (dialogs.length) {
+      event.preventDefault();
+      closeDialog(dialogs[dialogs.length - 1], "escape");
+      return;
+    }
     document.querySelectorAll('.sc-output-shell.is-spotlight').forEach((root) => { root.classList.remove("is-spotlight"); document.body.classList.remove("sc-has-spotlight"); notifyResize(root); });
   });
 

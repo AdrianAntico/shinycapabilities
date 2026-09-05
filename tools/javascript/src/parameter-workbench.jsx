@@ -75,9 +75,9 @@ function Workbench({ host, initialModel }) {
   const errors = useMemo(() => validate(schema.filter(field => conditionMet(field.condition, draft)), draft), [schema, draft]);
   const dirty = !equal(draft, applied), valid = errors.length === 0;
 
-  const publish = event => {
+  const publish = (event, snapshot = {}) => {
     eventRef.current = event;
-    host._pwValue = { draft, applied, valid, dirty, errors, conflict, event };
+    host._pwValue = { draft, applied, valid, dirty, errors, conflict, ...snapshot, event };
     host.dispatchEvent(new CustomEvent("parameter-workbench:change"));
   };
   useEffect(() => { host._pwController = message => {
@@ -100,8 +100,19 @@ function Workbench({ host, initialModel }) {
     }); return [...groups.entries()];
   }, [draft, host.id, query, schema]);
   const update = (key, value) => setDraft(previous => ({ ...previous, [key]: value }));
-  const apply = () => { if (!valid) { host.querySelector("[aria-invalid=true]")?.focus(); return; } const next = { type: "apply", nonce: nonce(), values: draft }; setApplied(draft); setConflict(false); publish(next); };
-  const reset = () => { setDraft(applied); setConflict(false); publish({ type: "reset", nonce: nonce(), values: applied }); };
+  const apply = () => {
+    if (!valid) { host.querySelector("[aria-invalid=true]")?.focus(); return; }
+    const next = { type: "apply", nonce: nonce(), values: draft };
+    setApplied(draft); setConflict(false);
+    publish(next, { applied: draft, dirty: false, conflict: false });
+  };
+  const reset = () => {
+    const resetErrors = validate(schema.filter(field => conditionMet(field.condition, applied)), applied);
+    setDraft(applied); setConflict(false);
+    publish({ type: "reset", nonce: nonce(), values: applied }, {
+      draft: applied, dirty: false, conflict: false, errors: resetErrors, valid: resetErrors.length === 0
+    });
+  };
 
   return <section className="sc-pw" aria-labelledby={`${host.id}-title`} data-dirty={dirty} data-valid={valid}>
     <header><div><h2 id={`${host.id}-title`}>{model.title || "Parameters"}</h2>{model.subtitle && <p>{model.subtitle}</p>}</div><div className="sc-pw-state" aria-live="polite"><span className={valid ? "is-valid" : "is-invalid"}>{valid ? "Valid" : `${errors.length} issue${errors.length === 1 ? "" : "s"}`}</span>{dirty && <span className="is-dirty">Unapplied changes</span>}{conflict && <span className="is-conflict">Host values changed</span>}</div></header>

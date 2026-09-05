@@ -19,6 +19,8 @@ browser_action_link(
 
 \item{icon}{Optional decorative or textual icon tag.}
 
+\item{disabled}{Whether the action is disabled and cannot be activated.}
+
 \item{title}{Optional accessible tooltip text.}
 }
 \description{

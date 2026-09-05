@@ -1,14 +1,14 @@
 testthat::test_that("package has no htmlwidgets dependency or implementation", {
-  description <- read.dcf(testthat::test_path("..", "..", "DESCRIPTION"))
+  description <- read.dcf(qualification_path("DESCRIPTION"))
   imports <- strsplit(description[1, "Imports"], ",")[[1L]]
   testthat::expect_false(any(trimws(imports) == "htmlwidgets"))
-  roots <- c(testthat::test_path("..", "..", "R"),
-    testthat::test_path("..", "..", "inst", "www", "direct-transport"))
+  roots <- c(qualification_path("R"),
+    qualification_path("inst", "www", "direct-transport"))
   files <- unlist(lapply(roots, list.files, recursive = TRUE, full.names = TRUE), use.names = FALSE)
   files <- files[!grepl("/assets/|\\\\assets\\\\", files)]
   source <- paste(vapply(files, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"), character(1)), collapse = "\n")
   testthat::expect_false(grepl("htmlwidgets::|createWidget\\(|shinyWidgetOutput|shinyRenderWidget|HTMLWidgets\\.widget", source))
-  testthat::expect_false(dir.exists(testthat::test_path("..", "..", "inst", "htmlwidgets")))
+  testthat::expect_false(dir.exists(qualification_path("inst", "htmlwidgets")))
 })
 
 testthat::test_that("migrated public constructors use direct transport", {

@@ -70,8 +70,8 @@ test_that("surface update APIs are namespace aware", {
 })
 
 test_that("browser assets include lifecycle accessibility and stress contracts", {
-  js <- paste(readLines(test_path("..", "..", "inst", "www", "browser-surfaces", "browser-surfaces.js"), warn = FALSE), collapse = "\n")
-  css <- paste(readLines(test_path("..", "..", "inst", "www", "browser-surfaces", "browser-surfaces.css"), warn = FALSE), collapse = "\n")
+  js <- paste(readLines(qualification_path("inst", "www", "browser-surfaces", "browser-surfaces.js"), warn = FALSE), collapse = "\n")
+  css <- paste(readLines(qualification_path("inst", "www", "browser-surfaces", "browser-surfaces.css"), warn = FALSE), collapse = "\n")
   expect_match(js, "MutationObserver", fixed = TRUE)
   expect_match(js, "ResizeObserver", fixed = TRUE)
   expect_match(js, "maxHistory", fixed = TRUE)
