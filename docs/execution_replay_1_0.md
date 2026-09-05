@@ -41,8 +41,8 @@ The demo composes Replay with Split Pane and AG Grid while using one host event 
 
 ## Promotion readiness
 
-Analytics Workstation candidates include governed execution events, collaboration task history, AgentSession events, execution leases, capability runs, artifact/evidence creation, review records, workflow transitions, and project audit records. A host adapter must provide stable IDs, deterministic ordering, truthful source modes, historical snapshots or reconstructible deltas, authorization-safe metadata, and reference integrity.
+A host adapter must provide stable IDs, deterministic ordering, truthful source modes, historical snapshots or reconstructible deltas, authorization-safe metadata, and reference integrity.
 
-Before promotion, qualify event retention, timestamp/sequence policy, late-arriving event behavior, redaction, source-mode labels, snapshot semantics, identity stability, maximum payload, update rate, and whether partial history is disclosed. Grok must emit provider-neutral bounded operational records through existing Workstation authority and provenance seams. Private reasoning, raw prompts/responses, and provider secrets must never enter the replay contract.
+Before promotion, qualify event retention, timestamp/sequence policy, late-arriving event behavior, redaction, source-mode labels, snapshot semantics, identity stability, maximum payload, update rate, and whether partial history is disclosed. Hosts must supply provider-neutral bounded operational records. Private reasoning, raw prompts/responses, and provider secrets must never enter the replay contract.
 
 Unsupported semantics include re-execution, retry/cancel, approvals, resume receipts, context capsules, source-code diffing, server-side history queries, causal inference, and reconstruction of state the host did not supply.

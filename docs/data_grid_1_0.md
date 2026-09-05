@@ -8,8 +8,7 @@ selection, and programmatic updates matter. Keep reactable for compact report
 tables, static summaries, and places where its smaller dependency and familiar R
 formatting API are the better fit.
 
-This component is parallel capability work. It does not migrate Analytics
-Workstation and does not change an existing `shinycapabilities` API.
+This component is parallel capability work. It does not change an existing `shinycapabilities` API.
 
 ## Public API
 
@@ -152,15 +151,12 @@ browser memory growth after replacement-data cycles.
 `ag-grid-community` 36.1.0 is locked in the browser build and is MIT licensed.
 The selective production bundle is approximately 862 KB minified and 241 KB
 gzip on the qualification machine. This is larger than reactable's incremental
-surface in Workstation, but package users do not need Node.js: built JS/CSS ships
+surface in an application already using reactable, but package users do not need Node.js: built JS/CSS ships
 under `inst/htmlwidgets/lib`.
 
 The package already depends on `htmlwidgets`, so that runtime is reused. The AG
 Grid wrapper is vanilla JavaScript and does not add another React root or require
-`ag-grid-react`. Analytics Workstation currently receives `reactable` plus its
-`reactR` dependency; a complete future migration could remove those only if no
-other Workstation surface still consumes them. `htmlwidgets`, `htmltools`, and
-`jsonlite` would remain ecosystem dependencies regardless.
+`ag-grid-react`.
 
 `npm audit --omit=dev` reports zero runtime vulnerabilities. The full build-tree
 audit reports one existing high-severity advisory in Vite's development-only
@@ -177,21 +173,8 @@ dependency or used by the grid in users' browsers.
 | Stable row event contract | Explicit IDs and bounded events | Requires app-specific wiring |
 | Compact report/static summary | Heavier than necessary | Preferred |
 | R-native cell rendering | Strict schema by design | More flexible/familiar |
-| Bundle cost | Higher | Lower incremental cost in Workstation |
+| Bundle cost | Higher | Lower incremental cost in host application |
 | Enterprise analytics features | Deliberately absent | Not applicable |
-
-## Future migration seams
-
-| Workstation surface | Existing control | Candidate | Expected gain | Risk |
-|---|---|---|---|---|
-| Artifact Library inventory | reactable | `data_grid()` | stable selection, column state, 100k-scale virtualization | medium: event/state mapping |
-| Code History | reactable | `data_grid()` | dense keyboard navigation and pinned identity/status columns | low-medium |
-| Data preview | reactable/basic preview | `data_grid()` | typed filters and large previews | medium: payload size |
-| Report tables | reactable | Keep reactable | no meaningful benefit from heavier grid | migration not recommended |
-
-No migration should occur until a Workstation-specific spike proves module
-namespacing, theme adaptation, project-state restoration, and real dataset
-performance without changing this host-neutral contract.
 
 ## QA contract
 

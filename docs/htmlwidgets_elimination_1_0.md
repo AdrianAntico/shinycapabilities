@@ -135,6 +135,6 @@ The lab package owns browser rendering, component lifecycle, normalization at it
 public boundary, and bounded interaction events. A host owns business semantics,
 authorization, execution, persistence, and governed state.
 
-Before Workstation promotion, Grok should map one component at a time, verify its
+Before application integration, maintainers should map one component at a time, verify its
 existing input/output seam, run installed-package and Electron qualification, and
 retain a package-version rollback. No host migration is included in this change.

@@ -93,11 +93,7 @@ screen-reader/browser matrix.
 
 ## Promotion readiness
 
-Candidate Workstation seams include artifact metadata, model diagnostics,
-provenance/evidence details, configuration snapshots, execution/session state,
-and structured errors currently rendered through repeated detail UI. Grok must
-map authorized, bounded records into this generic contract; it must not send
-private reasoning or secrets.
+Hosts must map authorized, bounded records into this generic contract and must not send private reasoning or secrets.
 
 Before promotion, qualify real payload adapters, maximum payload policy,
 redaction fixtures, stable path identity across host versions, CSP/assets,

@@ -12,17 +12,9 @@ install.packages("shinycapabilities_0.1.0.tar.gz", repos = NULL, type = "source"
 
 Node.js is not required to install or use the package; required browser assets are bundled.
 
-The [Complete User-Facing Shiny UI Elimination Program](docs/zero_visible_stock_shiny_program.md)
-records the current Workstation primitive inventory, foundational browser-control
-APIs, UX contract, remaining gaps, and machine-readable Grok migration matrix.
-
-The [Analytics Workstation UI handoff](docs/analytics_workstation_ui_handoff.md)
-is the durable integration entry point for ownership boundaries, qualified
-capabilities, dependency direction, migration rules, and remaining UI gaps.
-
-The [Complete Browser UI Surface 1.0](docs/browser_ui_surface_1_0.md) documents
-the overlay, dialog, notification, navigation, file, download, output-shell,
-fullscreen, and Report Studio primitives that close the generic migration gaps.
+The package includes browser-native controls, overlays, dialogs, notifications,
+navigation, file upload/download controls, and output shells. Host applications
+retain ownership of their domain behavior and execution policy.
 
 ## Smoke example
 
@@ -49,19 +41,6 @@ qualified direct implementation. See the
 [htmlwidgets Elimination and Component Modernization 1.0 report](docs/htmlwidgets_elimination_1_0.md)
 and [Direct Component Transport 1.0 report](docs/direct_component_transport_1_0.md).
 
-The [Persistent Dynamic UI 1.0 report](docs/persistent_dynamic_ui_1_0.md)
-benchmarks keyed browser patching against repeated `renderUI()` regeneration,
-defines the bounded schema and state-ownership contract, and maps realistic
-Analytics Workstation migration opportunities.
-
-The [Shared Browser Runtime 1.0 report](docs/shared_browser_runtime_1_0.md)
-documents the versioned React/TanStack runtime, lazy component dependencies,
-bundle evidence, compatibility rules, and incremental migration recommendation.
-
-The [Workstation UI opportunity scan](docs/ui_opportunity_scan.md) documents
-the evidence, JavaScript library review, prioritization, event contracts, and
-future migration boundaries. No Workstation migration is included.
-
 ## Analytical data grid lab
 
 `data_grid()` is a parallel AG Grid Community-backed component for dense,
@@ -72,12 +51,6 @@ Shiny events while leaving host behavior outside the widget.
 shinycapabilities::run_data_grid_demo()
 ```
 
-The [AG Grid Data Grid 1.0 report](docs/data_grid_1_0.md) documents the API,
-Community/Enterprise boundary, accessibility and scale tradeoffs, direct
-reactable comparison, and future migration seams. The recommendation is to
-selectively replace reactable for demanding interactive inventories, not report
-tables.
-
 ## Agent activity monitor lab
 
 `agent_activity_monitor()` renders a read-only, host-neutral projection of
@@ -87,10 +60,6 @@ relationships. The host remains responsible for execution and all mutations.
 ```r
 shinycapabilities::run_agent_activity_monitor_demo()
 ```
-
-The [Agent Activity Monitor 1.0 report](docs/agent_activity_monitor_1_0.md)
-defines the normalized contract, bounded live-update behavior, accessibility
-semantics, and promotion boundary.
 
 ## Relationship graph lab
 
@@ -115,10 +84,6 @@ backward, and appended events do not dislodge a user inspecting history.
 ```r
 shinycapabilities::run_execution_replay_demo()
 ```
-
-See the [Execution Replay 1.0 report](docs/execution_replay_1_0.md) for the
-normalized contract, state-at-time rule, event API, scale boundary, and
-promotion guidance.
 
 ## Monaco editor lab
 

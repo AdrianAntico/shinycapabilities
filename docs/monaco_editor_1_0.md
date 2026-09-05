@@ -93,10 +93,9 @@ forced-colors/reduced-motion treatment. Hosts must provide an accurate
 The component owns editing UI, browser draft state, markers, diff rendering,
 and bounded interaction events. A host must supply document identity/revision,
 diagnostics, completion results, persistence, permissions, and any execution
-intent handling. Workstation can map its existing Code Runner editor seam to
-`<id>_apply` without changing its execution model.
+intent handling.
 
-Before promotion, qualify the installed package in Workstation's supported
+Before promotion, qualify the installed package in the host's supported
 browser/Electron matrix, validate CSP handling of module workers, set document
 size policy, connect governed completion providers, and verify that project
 save/load remains authoritative. Execution must continue through the existing

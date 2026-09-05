@@ -14,9 +14,9 @@ The normalized projection contains `actors`, `work_items`, `events`, and optiona
 
 ## Promotion Readiness
 
-The host must supply canonical identities, normalized and raw states, relationships, attention reasons, telemetry, and sanitized event summaries. Analytics Workstation can map its role registry, collaboration tasks, Work jobs, governed executions, AgentSessions, Execution Leases, review/adjudication records, and artifact/evidence references into this contract.
+The host must supply canonical identities, normalized and raw states, relationships, attention reasons, telemetry, and sanitized event summaries.
 
-An eventual Grok provider remains a Workstation/AgentGateway concern. It can project provider-neutral execution metadata into the monitor only after credential, consent, sensitive-data, Mandate, authority, cost, failure, cancellation, replay, and operational qualification gates pass. Grok is not an agent identity and must not introduce widget-specific states.
+Provider adapters belong to the host application. The monitor accepts only sanitized, provider-neutral metadata; it does not grant credentials, consent, or execution authority.
 
 Percent completion, ETA, resource utilization, universal cost/token totals, and universal latency remain unsupported when the host does not supply them. Important risks before promotion are lossy state mapping, authority conflation, leaking private provider content, unbounded event updates, stale dependency references, and treating monitor intents as authorization.
 

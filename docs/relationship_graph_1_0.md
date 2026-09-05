@@ -24,8 +24,8 @@ The visual canvas supports focusable React Flow nodes and controls. A coordinate
 
 ## Promotion readiness
 
-Candidate Workstation seams include dataset lineage, artifact provenance, evidence support/challenge relationships, model-to-scoring lineage, and governed execution dependencies. The host must supply stable identities, typed relationships, bounded safe metadata, and any authorization-aware navigation handling.
+Candidate host application seams include dataset lineage, artifact provenance, evidence support/challenge relationships, model-to-scoring lineage, and governed execution dependencies. The host must supply stable identities, typed relationships, bounded safe metadata, and any authorization-aware navigation handling.
 
-Before promotion, Grok integration must qualify source-record authorization, metadata redaction, event routing, maximum graph size, expected update rate, identity stability, and whether neighborhood requests are local projections or host-side queries. Agent Activity Monitor work/dependency records can map into the same node/edge contract without coupling either component.
+Before promotion, host integration must qualify source-record authorization, metadata redaction, event routing, maximum graph size, expected update rate, identity stability, and whether neighborhood requests are local projections or host-side queries. Agent Activity Monitor work/dependency records can map into the same node/edge contract without coupling either component.
 
 Unsupported concerns include graph editing, host mutations, workflow execution, semantic inference, unbounded metadata, server-side graph querying, and guaranteed all-node rendering above the configured projection limit.

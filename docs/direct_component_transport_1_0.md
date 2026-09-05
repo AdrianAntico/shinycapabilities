@@ -161,7 +161,7 @@ lifecycle and payload evidence.
 3. Compare real browser memory after repeated mount/update/remove cycles.
 4. Migrate simple Shiny-only components one at a time behind parallel APIs.
 5. Migrate static-report components only after static parity is proven.
-6. Remove `htmlwidgets` only when no package code, tests, docs, or Workstation
+6. Remove `htmlwidgets` only when no package code, tests, docs, or host application
    seam depends on it.
 
 ## Promotion Readiness
@@ -169,6 +169,6 @@ lifecycle and payload evidence.
 Before canonical promotion, prove Windows installed-package behavior, source
 package build/check, static R Markdown output, multiple Shiny modules,
 disconnect/reconnect, browser memory stability, CSP compatibility, and all
-supported browsers. Workstation must then qualify its installed package and
-every migrated page independently. No Workstation integration is authorized by
+supported browsers. Each host must then qualify its installed package and
+every migrated page independently. No host application integration is authorized by
 this checkpoint.

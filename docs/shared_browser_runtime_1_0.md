@@ -6,7 +6,7 @@
 migrate existing components.** Do not mass-migrate existing htmlwidgets and do
 not move specialized libraries into the runtime.
 
-This checkpoint does not authorize Analytics Workstation integration or
+This checkpoint does not authorize host application integration or
 `htmlwidgets` removal.
 
 ## Duplication Inventory
@@ -204,18 +204,17 @@ The package owns runtime versions and built assets. Components own only their
 specific code and declared runtime major. Specialized engines remain local.
 Hosts supply state and handle emitted intents.
 
-Before Grok promotes this architecture to canonical `shinycapabilities`, it
-must qualify:
+Before adopting this runtime, maintainers must qualify:
 
 * installed source and binary package resource URLs;
 * package-upgrade cache behavior;
-* Workstation CSP and Electron/WebView behavior;
+* host application CSP and Electron/WebView behavior;
 * reconnect and long-duration memory;
 * all migrated component parity and accessibility;
 * static/R Markdown consumers;
 * old and new implementation coexistence during migration.
 
-No Workstation migration is authorized by this checkpoint.
+No host application migration is authorized by this checkpoint.
 
 ## Reproduction
 

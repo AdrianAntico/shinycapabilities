@@ -61,7 +61,7 @@ workbench atomicity, resize, and overlay repairs remain in the release candidate
 Unrelated browser guard/test and untracked AGENTS.md remain outside the commit;
 line-ending-only generated CSS working changes are also left untouched. Previously
 disclosed full touch-drag, dark contrast, Tab-only, and real network reconnect limits
-remain limits, not silently upgraded claims. Workstation and AG Grid were not modified.
+remain limits, not silently upgraded claims. AG Grid was not modified.
 
 ## Prior release checkpoint: NOT_QUALIFIED (resolved above)
 
@@ -166,7 +166,7 @@ was created. Reproduction scripts live under `tools/javascript/` and
 
 Inspected local and published `main`: `e28770d37c4ce10ec489def94894cf814486cb22`, version **0.2.1**, origin **https://github.com/AdrianAntico/shinycapabilities**. Remote main matched this commit. The host-neutral branch is a different, narrower history, not a newer complete UI platform. No branch switch, merge, commit, push, or version change was performed. Implementation described below is **uncommitted on main**, not contained in that SHA.
 
-Pre-existing changes to `inst/www/browser-surfaces/browser-surfaces.js`, `tests/testthat/test-browser-surfaces.R`, and untracked `AGENTS.md` were preserved. Workstation and analytical packages were not modified.
+Pre-existing changes to `inst/www/browser-surfaces/browser-surfaces.js`, `tests/testthat/test-browser-surfaces.R`, and untracked `AGENTS.md` were preserved. Other packages were not modified.
 
 **Dependency discrepancy:** published main already depends on `ag-grid-community` 36.1.0. This wave did not introduce, upgrade, or replace that dependency. A non-AG-Grid migration is not already present on the inspected remote branches; removing the existing grid without parity would violate component preservation. This remains a boundary requiring an explicit subsequent migration, not something silently resolved here.
 
@@ -264,7 +264,7 @@ No new public functions or dependencies. Public signatures preserved.
 - Transport restores its lifecycle marker when a renderer replaces className (the existing grid does this).
 - Early custom patches are queued until a complete initial render; stale queued patches cannot overwrite newer queued state.
 - Workbench Apply/Reset publishes coherent applied/draft/dirty/conflict/validation state with the event, removing the observed previous-value race.
-- Added `inst/examples/equipment-review/app.R`: tree/palette/grid selection, inspector, explicit parameter Apply, plot, split and inspection action. Deterministic 120-record equipment fixture; no analytics or Workstation coupling.
+- Added `inst/examples/equipment-review/app.R`: tree/palette/grid selection, inspector, explicit parameter Apply, plot, split and inspection action. Deterministic 120-record equipment fixture; no domain-specific coupling.
 - Added executable lifecycle tests and browser composition/scale scripts. Rebuilt shipped assets with existing Vite configs.
 
 ## QA and limits

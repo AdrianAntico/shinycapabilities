@@ -9,7 +9,7 @@ right tool for small or infrequent fragments, arbitrary Shiny tag composition,
 and UI containing server-bound Shiny inputs. Specialized data grids, trees,
 graphs, editors, and artifact renderers should remain specialized components.
 
-This checkpoint does not authorize an Analytics Workstation migration.
+Each host application requires independent integration qualification.
 
 ## Experimental API
 
@@ -135,25 +135,6 @@ preserved. Forced-colors and reduced-motion media rules are included. The
 container is an identified region. Routine value patches are not announced as
 live-region chatter; hosts should provide a deliberate status announcement when
 an update requires user attention.
-
-## Workstation Opportunity Map
-
-A read-only scan found 769 `uiOutput()`/`renderUI()` references across 31 active
-R source files. This is an occurrence count, not 769 independent migration
-units; many are paired declarations, branches, or tests embedded in helpers.
-
-| Classification | Representative surfaces | Direction |
-|---|---|---|
-| Strong candidate | readiness/quality summaries, decision headers and status panels, runtime qualification summaries, agent timelines, bounded code-run details | Persistent schema |
-| Possible candidate | evidence summaries, project/export status, bounded inspector metadata, follow-up/action lists | Evaluate update frequency and composition first |
-| Keep `renderUI()` | small infrequent conditional fragments, module settings built from native Shiny inputs, arbitrary report/tag output | Existing Shiny lifecycle |
-| Specialized component | data preview, artifact gallery/renderer, large tables, trees, graphs, parameter editors, code editors | Existing or future dedicated component |
-
-An initial source-level estimate is that roughly **25–40%** of the observed
-dynamic surfaces could plausibly use the persistent pattern, with another
-15–25% worth case-by-case evaluation. The remainder should stay with
-`renderUI()` or migrate to a specialized component. A real migration inventory
-must collapse paired UI/server references before producing a definitive count.
 
 ## Direct Transport Qualification
 

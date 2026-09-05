@@ -3,7 +3,7 @@
 ## Scope
 
 This release closes the known generic browser-presentation gaps required for a
-zero-visible-stock-Shiny Analytics Workstation migration. Shiny remains session,
+zero-visible-stock-Shiny host application migration. Shiny remains session,
 reactivity, upload, download, and server authority. Browser surfaces render
 supplied state and emit bounded intents.
 
@@ -114,7 +114,7 @@ Read-only archaeology identified these generic needs:
 | Nested block metadata | Object Inspector |
 
 Document persistence, report semantics, authoring workflows, block mutation,
-selection authority, and export remain Workstation responsibilities.
+selection authority, and export remain host application responsibilities.
 
 ## Replacement Coverage
 
@@ -126,13 +126,13 @@ projections, while purpose-built components own specialized interactions.
 ## Dependencies
 
 No dependency was added. The package still imports only `shiny`, `htmltools`,
-`jsonlite`, `callr`, and `digest`. `htmlwidgets` remains absent. Workstation may
+`jsonlite`, `callr`, and `digest`. `htmlwidgets` remains absent. A host application may
 eventually remove `shinyWidgets`, `reactable`, and `reactR` after migration and
 installed-application QA.
 
 ## Promotion Readiness
 
-Before Workstation promotion, Grok should qualify each migrated surface against
+Before application integration, maintainers should qualify each migrated surface against
 its host state contract, module namespace, installed Electron build, light/dark
 theme, and authoritative server action. File upload and download require explicit
 installed-app transport QA. Fullscreen requires Electron/browser policy QA.
