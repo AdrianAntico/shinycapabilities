@@ -74,6 +74,13 @@ function TypeValue({ node }) {
 }
 
 function ObjectInspector({ host, model, emit, controllerRef }) {
+  const [rowHeight, setRowHeight] = useState(30);
+  useEffect(() => {
+    const frame = host.closest('.sc-application-frame'); if (!frame) return;
+    const update = () => setRowHeight(parseFloat(getComputedStyle(frame).getPropertyValue('--sc-row-height')) || 30);
+    update(); frame.addEventListener('shinycapabilities:presentation', update);
+    return () => frame.removeEventListener('shinycapabilities:presentation', update);
+  }, [host]);
   const [root, setRoot] = useState(model.root), [query, setQuery] = useState(model.search || "");
   const [expanded, setExpanded] = useState(() => new Set(model.expandedPaths || [""]));
   const [selected, setSelected] = useState(model.selectedPath ?? "");
@@ -81,7 +88,8 @@ function ObjectInspector({ host, model, emit, controllerRef }) {
   const index = useMemo(() => indexTree(root), [root]);
   const rows = useMemo(() => visibleRows(index, expanded, query), [index, expanded, query]);
   const virtual = useVirtualizer({ count: rows.length, getScrollElement: () => viewport.current,
-    estimateSize: () => 30, overscan: 10, getItemKey: i => rows[i]?.path || i });
+    estimateSize: () => rowHeight, overscan: 10, getItemKey: i => rows[i]?.path || i });
+  useEffect(() => virtual.measure(), [rowHeight]);
   const select = (path, source = "user") => {
     const row = index.byPath.get(path); if (!row) return;
     setSelected(path); emit("selection", { path, key: row.key, nodeType: row.node.nodeType,

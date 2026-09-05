@@ -34,6 +34,7 @@ function Palette({ host, model, emit }) {
   useEffect(() => {
     if (!options.shortcut) return;
     const handler = event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      if (window.ShinyCapabilitiesFoundation && !window.ShinyCapabilitiesFoundation.shortcutAllowed(host)) return;
       event.preventDefault(); input.current?.focus();
     }};
     window.addEventListener("keydown", handler);
@@ -44,10 +45,13 @@ function Palette({ host, model, emit }) {
     const timer = setTimeout(() => emit("query", { query, nonce: Date.now() }), 150);
     return () => clearTimeout(timer);
   }, [emit, options.serverSearch, query]);
-  const activate = item => { if (item && !item.disabled) emit("command", {
+  const activate = item => { if (item && !item.disabled) {
+    const frame = host.closest('.sc-application-frame');
+    if (frame) window.ShinyCapabilitiesFoundation?.invoke(frame, item.id, 'palette');
+    emit("command", {
     id: item.id, label: item.label, group: item.group || "Commands", query,
     metadata: item.metadata || {}, nonce: Date.now()
-  }); };
+  }); } };
   const keydown = event => {
     if (event.key === "ArrowDown") { event.preventDefault(); const next = Math.min(filtered.length - 1, active + 1); setActive(next); virtualizer.scrollToIndex(next); }
     else if (event.key === "ArrowUp") { event.preventDefault(); const next = Math.max(0, active - 1); setActive(next); virtualizer.scrollToIndex(next); }

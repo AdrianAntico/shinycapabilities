@@ -1,6 +1,6 @@
 selection_system_dependency <- function() {
   list(browser_runtime_dependency(), htmltools::htmlDependency(
-    name = "shinycapabilities-selection-system", version = "1.0.0",
+    name = "shinycapabilities-selection-system", version = "1.1.0",
     src = c(file = "www/direct-transport"), package = "shinycapabilities",
     script = "selection-system.js", stylesheet = "selection-system.css"
   ))
@@ -8,7 +8,7 @@ selection_system_dependency <- function() {
 
 normalize_selection_groups <- function(groups) {
   if (is.null(groups)) return(list())
-  if (is.character(groups)) groups <- list(Options = stats::setNames(groups, groups))
+  if (is.character(groups)) groups <- list(Options = groups)
   Map(function(values, index) {
     if (is.list(values) && !is.null(values$options)) return(values)
     labels <- names(values) %||% as.character(values)

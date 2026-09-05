@@ -74,7 +74,7 @@ direct_component_dependency <- function(component) {
     stop("Unknown direct component: ", component, call. = FALSE))
   htmltools::htmlDependency(
     name = paste0("shinycapabilities-direct-", gsub("_", "-", component)),
-    version = "1.0.0",
+    version = if (component %in% c("command_palette_direct", "object_inspector", "data_grid")) "1.1.0" else "1.0.0",
     src = c(file = normalizePath(root, winslash = "/", mustWork = TRUE)),
     script = if (identical(component, "code_editor")) {
       list(src = script, type = "module")

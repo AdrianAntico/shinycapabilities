@@ -39,6 +39,22 @@
   }
 
   function setState(root, message) {
+    if (Object.prototype.hasOwnProperty.call(message, "required") && field(root)) field(root).required=Boolean(message.required);
+    if (Object.prototype.hasOwnProperty.call(message, "help")) {
+      let help=root.querySelector('.sc-control-help');
+      if(message.help==null||message.help==='')help?.remove();
+      else {if(!help){help=document.createElement('div');help.className='sc-control-help';help.id=`${root.id}-help`;root.append(help);}help.textContent=String(message.help);}
+    }
+    if (Object.prototype.hasOwnProperty.call(message, "loading")) root.setAttribute("aria-busy", String(Boolean(message.loading)));
+    if (Object.prototype.hasOwnProperty.call(message, "warning")) {
+      let warning = root.querySelector(".sc-control-warning");
+      if (message.warning == null || message.warning === "") warning?.remove();
+      else {
+        if (!warning) {warning=document.createElement("div");warning.className="sc-control-warning";
+          warning.id=`${root.id}-warning`;warning.setAttribute("role","status");root.append(warning);}
+        warning.textContent=String(message.warning);
+      }
+    }
     if (Object.prototype.hasOwnProperty.call(message, "value")) setValue(root, message.value);
     const controls = root.querySelectorAll("input, textarea, select, button");
     if (Object.prototype.hasOwnProperty.call(message, "disabled")) {
@@ -93,6 +109,12 @@
     }
   }
 
+  function describe(root) {
+    const ids=[...root.querySelectorAll('.sc-control-help,.sc-control-error,.sc-control-warning')].map(x=>x.id).filter(Boolean);
+    const control=field(root); if(!control)return;
+    if(ids.length)control.setAttribute('aria-describedby',ids.join(' '));else control.removeAttribute('aria-describedby');
+  }
+
   function bindRoot(root, callback) {
     const listener = (event) => {
       updateRangeOutput(root);
@@ -123,8 +145,12 @@
     controls.setValue = setValue;
     controls.subscribe = bindRoot;
     controls.unsubscribe = unbindRoot;
-    controls.receiveMessage = (root, message) => setState(root, message || {});
-    controls.getState = (root) => ({ value: value(root) });
+    controls.receiveMessage = (root, message) => {setState(root, message || {});describe(root);};
+    controls.getState = (root) => ({ value: value(root), disabled: field(root)?.disabled || false,
+      readonly: field(root)?.readOnly || false, required: field(root)?.required || false,
+      loading: root.getAttribute('aria-busy') === 'true', error: root.querySelector('.sc-control-error')?.textContent || null,
+      warning: root.querySelector('.sc-control-warning')?.textContent || null,
+      valid: field(root)?.validity?.valid !== false && !root.querySelector('.sc-control-error') });
     Shiny.inputBindings.register(controls, "shinycapabilities.browserControls");
 
     const actionCounts = new WeakMap();

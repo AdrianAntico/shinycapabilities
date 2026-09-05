@@ -1,6 +1,6 @@
 browser_controls_dependency <- function() {
   htmltools::htmlDependency(
-    name = "shinycapabilities-browser-controls", version = "1.0.0",
+    name = "shinycapabilities-browser-controls", version = "1.1.0",
     src = c(file = "www/browser-controls"), package = "shinycapabilities",
     script = "browser-controls.js", stylesheet = "browser-controls.css"
   )
@@ -15,12 +15,13 @@ browser_control_scalar <- function(value, name) {
 
 browser_control_shell <- function(input_id, label, control, help = NULL,
     error = NULL, required = FALSE, disabled = FALSE, readonly = FALSE,
-    class = NULL, attributes = list()) {
+    class = NULL, attributes = list(), warning = NULL, loading = FALSE) {
   input_id <- browser_control_scalar(as.character(input_id), "input_id")
   label_id <- paste0(input_id, "-label")
   help_id <- paste0(input_id, "-help")
   error_id <- paste0(input_id, "-error")
-  described <- paste(c(if (!is.null(help)) help_id, if (!is.null(error)) error_id), collapse = " ")
+  described <- paste(c(if (!is.null(help)) help_id, if (!is.null(error)) error_id,
+    if (!is.null(warning)) paste0(input_id, "-warning")), collapse = " ")
   control$attribs$id <- paste0(input_id, "-control")
   control$attribs$disabled <- if (isTRUE(disabled)) "disabled" else NULL
   control$attribs$readonly <- if (isTRUE(readonly)) "readonly" else NULL
@@ -35,12 +36,15 @@ browser_control_shell <- function(input_id, label, control, help = NULL,
     `data-sc-control` = "true",
     `data-disabled` = tolower(as.character(isTRUE(disabled))),
     `data-readonly` = tolower(as.character(isTRUE(readonly))),
+    `aria-busy` = tolower(as.character(isTRUE(loading))),
     htmltools::tags$label(id = label_id, `for` = control$attribs$id,
       class = "sc-control-label", label,
       if (isTRUE(required)) htmltools::tags$span(class = "sc-required", `aria-hidden` = "true", " *")),
     control,
     if (!is.null(help)) htmltools::tags$div(id = help_id, class = "sc-control-help", help),
-    if (!is.null(error)) htmltools::tags$div(id = error_id, class = "sc-control-error", role = "alert", error)
+    if (!is.null(error)) htmltools::tags$div(id = error_id, class = "sc-control-error", role = "alert", error),
+    if (!is.null(warning)) htmltools::tags$div(id = paste0(input_id, "-warning"),
+      class = "sc-control-warning", role = "status", warning)
   ), attributes))
   htmltools::attachDependencies(shell, browser_controls_dependency())
 }
@@ -53,14 +57,17 @@ browser_control_shell <- function(input_id, label, control, help = NULL,
 #' @param help,error Optional help and validation text.
 #' @param required,disabled,readonly Field states.
 #' @param autocomplete Browser autocomplete token.
+#' @param warning Optional non-blocking warning; distinct from an error.
+#' @param loading Busy presentation state; does not silently disable the field.
 #' @export
 browser_text_field <- function(input_id, label, value = "", placeholder = NULL,
     help = NULL, error = NULL, required = FALSE, disabled = FALSE,
-    readonly = FALSE, autocomplete = "off") {
+    readonly = FALSE, autocomplete = "off", warning = NULL, loading = FALSE) {
   browser_control_shell(input_id, label,
     htmltools::tags$input(type = "text", class = "sc-control-input",
       value = as.character(value %||% ""), placeholder = placeholder,
-      autocomplete = autocomplete), help, error, required, disabled, readonly)
+      autocomplete = autocomplete), help, error, required, disabled, readonly,
+    warning = warning, loading = loading)
 }
 
 #' Browser-native numeric field
@@ -69,11 +76,11 @@ browser_text_field <- function(input_id, label, value = "", placeholder = NULL,
 #' @export
 browser_numeric_field <- function(input_id, label, value = NULL, min = NULL,
     max = NULL, step = "any", placeholder = NULL, help = NULL, error = NULL,
-    required = FALSE, disabled = FALSE, readonly = FALSE) {
+    required = FALSE, disabled = FALSE, readonly = FALSE, warning = NULL, loading = FALSE) {
   browser_control_shell(input_id, label,
     htmltools::tags$input(type = "number", class = "sc-control-input",
       value = value, min = min, max = max, step = step, placeholder = placeholder),
-    help, error, required, disabled, readonly)
+    help, error, required, disabled, readonly, warning = warning, loading = loading)
 }
 
 #' Browser-native secret field
@@ -81,11 +88,12 @@ browser_numeric_field <- function(input_id, label, value = NULL, min = NULL,
 #' @export
 browser_secret_field <- function(input_id, label, value = "", placeholder = NULL,
     help = NULL, error = NULL, required = FALSE, disabled = FALSE,
-    readonly = FALSE, autocomplete = "current-password") {
+    readonly = FALSE, autocomplete = "current-password", warning = NULL, loading = FALSE) {
   browser_control_shell(input_id, label,
     htmltools::tags$input(type = "password", class = "sc-control-input",
       value = as.character(value %||% ""), placeholder = placeholder,
-      autocomplete = autocomplete), help, error, required, disabled, readonly)
+      autocomplete = autocomplete), help, error, required, disabled, readonly,
+    warning = warning, loading = loading)
 }
 
 #' Browser-native multiline field
@@ -94,11 +102,12 @@ browser_secret_field <- function(input_id, label, value = "", placeholder = NULL
 #' @export
 browser_textarea <- function(input_id, label, value = "", rows = 5L,
     placeholder = NULL, help = NULL, error = NULL, required = FALSE,
-    disabled = FALSE, readonly = FALSE) {
+    disabled = FALSE, readonly = FALSE, warning = NULL, loading = FALSE) {
   browser_control_shell(input_id, label,
     htmltools::tags$textarea(class = "sc-control-input sc-control-textarea",
       rows = max(2L, as.integer(rows)), placeholder = placeholder,
-      as.character(value %||% "")), help, error, required, disabled, readonly)
+      as.character(value %||% "")), help, error, required, disabled, readonly,
+    warning = warning, loading = loading)
 }
 
 browser_binary_control <- function(input_id, label, value, help, disabled,

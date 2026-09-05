@@ -14,7 +14,9 @@ browser_textarea(
   error = NULL,
   required = FALSE,
   disabled = FALSE,
-  readonly = FALSE
+  readonly = FALSE,
+  warning = NULL,
+  loading = FALSE
 )
 }
 \arguments{
@@ -31,6 +33,10 @@ browser_textarea(
 \item{help, error}{Optional help and validation text.}
 
 \item{required, disabled, readonly}{Field states.}
+
+\item{warning}{Optional non-blocking warning; distinct from an error.}
+
+\item{loading}{Busy presentation state; does not silently disable the field.}
 }
 \description{
 Browser-native multiline field

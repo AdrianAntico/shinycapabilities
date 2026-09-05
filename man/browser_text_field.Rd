@@ -14,7 +14,9 @@ browser_text_field(
   required = FALSE,
   disabled = FALSE,
   readonly = FALSE,
-  autocomplete = "off"
+  autocomplete = "off",
+  warning = NULL,
+  loading = FALSE
 )
 }
 \arguments{
@@ -31,6 +33,10 @@ browser_text_field(
 \item{required, disabled, readonly}{Field states.}
 
 \item{autocomplete}{Browser autocomplete token.}
+
+\item{warning}{Optional non-blocking warning; distinct from an error.}
+
+\item{loading}{Busy presentation state; does not silently disable the field.}
 }
 \description{
 Browser-native text field

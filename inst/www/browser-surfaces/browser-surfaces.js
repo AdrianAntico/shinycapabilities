@@ -46,6 +46,7 @@
   function closeOverlay(root, restore = true) {
     const current = state.get(root);
     if (!current?.open || !current.panel) return;
+    window.ShinyCapabilitiesFoundation?.overlayClose(current.panel, false);
     current.panel.hidden = true;
     if (current.placeholder) current.placeholder.replaceWith(current.panel);
     current.trigger?.setAttribute("aria-expanded", "false");
@@ -56,15 +57,16 @@
 
   function openOverlay(root, trigger, panel, placement) {
     document.querySelectorAll('[data-sc-surface="popover"], [data-sc-surface="context-menu"]').forEach((other) => {
-      if (other !== root) closeOverlay(other, false);
+      if (other !== root && !state.get(other)?.panel?.contains(root)) closeOverlay(other, false);
     });
     const placeholder = document.createComment("sc-overlay-home");
     panel.replaceWith(placeholder);
-    (root.closest('dialog[open]') || ensureLayer()).appendChild(panel);
+    (window.ShinyCapabilitiesFoundation?.overlayRoot(root) || root.closest('dialog[open]') || ensureLayer()).appendChild(panel);
     panel.hidden = false;
     trigger.setAttribute("aria-expanded", "true");
     place(trigger, panel, placement || "bottom-start");
     state.set(root, Object.assign(state.get(root) || {}, { open: true, panel, trigger, placeholder }));
+    window.ShinyCapabilitiesFoundation?.overlayOpen(panel, () => closeOverlay(root), trigger);
     const first = focusables(panel)[0];
     if (first && root.dataset.scSurface === "context-menu") first.focus();
     emit(root, "open", {});
@@ -110,12 +112,16 @@
     if (root.open) return;
     state.set(root, Object.assign(state.get(root) || {}, { previousFocus: document.activeElement }));
     root.showModal();
+    window.ShinyCapabilitiesFoundation?.overlayOpen(root, () => {
+      if (root.dataset.dismissible === "true") closeDialog(root, "escape");
+    }, state.get(root)?.previousFocus);
     focusables(root)[0]?.focus();
     emit(root, "open", {});
   }
 
   function closeDialog(root, reason) {
     if (!root.open) return;
+    window.ShinyCapabilitiesFoundation?.overlayClose(root, false);
     root.close();
     state.get(root)?.previousFocus?.focus?.({ preventScroll: true });
     emit(root, "close", { reason: reason || "programmatic" });

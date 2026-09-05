@@ -107,7 +107,8 @@ function SelectionInput({ host, model }) {
     if (activeClose === close) activeClose = null; requestAnimationFrame(() => triggerRef.current?.focus()); };
   const show = () => { if (model.disabled || model.loading) return; activeClose?.(); activeClose = close;
     setOpen(true); metrics.opened++; metrics.livePopups++; };
-  const labelFor = id => model.labels?.[id] || id;
+  const labelFor = id => model.labels?.[id] ?? (model.groups || []).flatMap(group => group.options || [])
+    .find(option => String(option.value) === String(id))?.label ?? id;
   const stale = value.filter(id => model.stale?.includes(id)).length;
   const summary = !value.length ? (model.emptyLabel || "Nothing selected") : value.length === 1 ? labelFor(value[0]) :
     `${value.length} fields selected${stale ? ` · ${stale} stale` : ""}`;
@@ -123,7 +124,10 @@ function SelectionInput({ host, model }) {
         }})] }).then(({ x, y }) => Object.assign(popupRef.current.style,
           { left: `${x}px`, top: `${y}px` })));
     requestAnimationFrame(() => (searchRef.current || popupRef.current)?.focus());
-    return () => { cleanupRef.current?.(); cleanupRef.current = null; };
+    const panel = popupRef.current;
+    window.ShinyCapabilitiesFoundation?.overlayOpen(panel, close, triggerRef.current);
+    return () => { cleanupRef.current?.(); cleanupRef.current = null;
+      window.ShinyCapabilitiesFoundation?.overlayClose(panel, false); };
   }, [open]);
   useEffect(() => {
     if (!open) return;
@@ -162,7 +166,7 @@ function SelectionInput({ host, model }) {
         </div>; })}
       </div>
     </div><div className="sc-selection-status" role="status">{optionRows.length} matching fields · {value.length} selected</div>
-  </div>, document.body);
+  </div>, window.ShinyCapabilitiesFoundation?.overlayRoot(host) || document.body);
 
   return <div className={`sc-selection-shell${!same(value, model.applied) ? " is-dirty" : ""}${model.disabled ? " is-disabled" : ""}${invalid ? " is-invalid" : ""}`}>
     <label id={`${host.id}-label`}>{model.label}</label>

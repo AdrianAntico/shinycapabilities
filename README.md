@@ -7,7 +7,7 @@
 R 4.1 or later is required. Install a source archive with:
 
 ```r
-install.packages("shinycapabilities_0.1.0.tar.gz", repos = NULL, type = "source")
+install.packages("shinycapabilities_0.3.0.tar.gz", repos = NULL, type = "source")
 ```
 
 Node.js is not required to install or use the package; required browser assets are bundled.
@@ -15,6 +15,20 @@ Node.js is not required to install or use the package; required browser assets a
 The package includes browser-native controls, overlays, dialogs, notifications,
 navigation, file upload/download controls, and output shells. Host applications
 retain ownership of their domain behavior and execution policy.
+
+## Application foundation
+
+`application_frame()` composes optional named regions with shared semantic
+tokens, light/dark/Bootstrap-inherited themes, and presentation-only density.
+Native fields, nested overlays, and structured command invocations retain
+their existing host-owned state and execution boundaries.
+
+```r
+shiny::runApp(system.file("examples/foundation-review", package = "shinycapabilities"))
+```
+
+See the [foundation guide](docs/framework_foundation_0_3_0.md) for contracts,
+token overrides, and the public equipment-review composition.
 
 ## Smoke example
 

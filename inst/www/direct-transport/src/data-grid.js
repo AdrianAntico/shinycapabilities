@@ -222,6 +222,18 @@ function renderGrid(element, payload) {
     onColumnResized: event => event.finished && emitState(event.api)
   }, { modules });
   gridInstances.set(element, { api, controller, controls });
+  const frame = element.closest('.sc-application-frame');
+  if (frame) {
+    const presentation = () => {
+      const css = getComputedStyle(frame), token = name => css.getPropertyValue(name).trim();
+      api.setGridOption('theme', themeQuartz.withParams({backgroundColor: token('--sc-surface'),
+        foregroundColor: token('--sc-text'), borderColor: token('--sc-border'),
+        accentColor: token('--sc-primary'), spacing: parseFloat(token('--sc-space'))}));
+      if (!payload.options.row_height) api.setGridOption('rowHeight', parseFloat(token('--sc-row-height')));
+    };
+    frame.addEventListener('shinycapabilities:presentation', presentation, {signal: controller.signal});
+    presentation();
+  }
   controls.search?.addEventListener("input", event => api.setGridOption("quickFilterText", event.target.value), { signal: controller.signal });
   const columnsButton = controls.actions.querySelector('[data-action="columns"]');
   if (columnsButton) createColumnPopover(api, columnsButton);

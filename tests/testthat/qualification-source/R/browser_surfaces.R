@@ -1,6 +1,6 @@
 browser_surfaces_dependency <- function() {
   htmltools::htmlDependency(
-    name = "shinycapabilities-browser-surfaces", version = "1.0.1",
+    name = "shinycapabilities-browser-surfaces", version = "1.1.0",
     src = c(file = "www/browser-surfaces"), package = "shinycapabilities",
     script = "browser-surfaces.js", stylesheet = "browser-surfaces.css"
   )
