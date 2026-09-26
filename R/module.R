@@ -246,6 +246,12 @@ capability_canvas_ui <- function(id, registry, height = "680px", toolbar = TRUE,
 #' @param context Host execution context.
 #' @param bind_internal_controls Bind the legacy module input IDs to runtime commands.
 #' @param config_control_renderer Optional host renderer for a configuration field.
+#' @return Session-local canvas controls. `set_configuration_context(record)`
+#'   activates a named record of nonempty scalar identities and rotates an
+#'   inspector generation on every call, including same-context restoration.
+#'   It clears transient selection/drafts, never graph/cache; hosts restore the
+#'   intended checkpoint drafts afterward. Once active, fields, ownership and
+#'   Apply/Discard actions are isolated to the current activation and selection.
 #' @export
 capability_canvas_server <- function(id, registry, initial_graph = list(nodes = list(), edges = list()),
                                      context = list(), bind_internal_controls = TRUE,
@@ -260,6 +266,30 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     config_drafts <- shiny::reactiveVal(list())
     inspector_revision <- shiny::reactiveVal(0L)
     graph_revision <- shiny::reactiveVal(0L)
+    configuration_context <- shiny::reactiveVal(NULL)
+    configuration_generation <- shiny::reactiveVal(0L)
+    advance_configuration_form <- function() {
+      configuration_generation(shiny::isolate(configuration_generation()) + 1L)
+    }
+    configuration_node_key <- function(node_id) {
+      if (is.null(configuration_context())) return(node_id)
+      paste0("scope", configuration_generation(), "__", node_id)
+    }
+    configuration_input_value <- function(node, name) {
+      if (is.null(configuration_context())) return(config_input_value(input, node$id, name))
+      config_input_value(input, configuration_node_key(node$id), name)
+    }
+    configuration_inspector_owned <- function(node) {
+      if (is.null(configuration_context()))
+        return(identical(input$inspector_owner %||% "", node$id))
+      identical(input$inspector_owner %||% "", configuration_node_key(node$id))
+    }
+    configuration_action_key <- function(action) {
+      if (is.null(configuration_context())) return(action)
+      node <- selected_node()
+      paste0(action, "__", configuration_node_key(node$id %||% "unselected"))
+    }
+    configuration_action_value <- function(action) input[[configuration_action_key(action)]]
 
     publish_graph <- function(ack_mutation_id = NULL, reason = "server_publication") {
       graph_revision(shiny::isolate(graph_revision()) + 1L)
@@ -288,6 +318,8 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         publish_graph(event$mutationId %||% NULL, paste0("client_", event$type))
       }
       if (identical(event$type, "node_selected")) {
+        if (!is.null(shiny::isolate(configuration_context())) &&
+            !identical(shiny::isolate(selected_id()), event$nodeId)) advance_configuration_form()
         selected_id(event$nodeId)
         session$onFlushed(function() session$sendCustomMessage(
           "shinycapabilities:v1:selection-ack",
@@ -316,10 +348,10 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     shiny::observe({
       node <- selected_node()
       if (is.null(node)) return()
-      if (!identical(input$inspector_owner %||% "", node$id)) return()
+      if (!configuration_inspector_owned(node)) return()
       capability <- capability_registry_get(registry, node$capability_id)
       values <- setNames(lapply(names(capability$config), function(name) {
-        config_input_value(input, node$id, name)
+        configuration_input_value(node, name)
       }), names(capability$config))
       present <- !vapply(values, is.null, logical(1))
       if (!any(present)) return()
@@ -363,7 +395,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       draft <- shiny::isolate(config_drafts())[[node$id]] %||% list()
       render_node <- node
       render_node$config <- utils::modifyList(node$config %||% list(), draft)
-      node_namespace <- function(id) session$ns(paste0("node__", node$id, "__", id))
+      node_namespace <- function(id) session$ns(paste0("node__", configuration_node_key(node$id), "__", id))
       custom <- if (is.function(capability$custom_ui)) capability$custom_ui(session$ns, node) else NULL
       execution_error <- cache()[[node$id]]$error %||% NULL
       execution_error_message <- if (is.list(execution_error)) {
@@ -372,16 +404,14 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         paste(execution_error %||% "Unknown failure", collapse = " ")
       }
       config_action <- function(input_id, label, class = NULL) {
-        button <- shiny::actionButton(session$ns(input_id), label, class = class)
+        button <- shiny::actionButton(session$ns(configuration_action_key(input_id)), label, class = class)
         if (!length(draft)) button <- htmltools::tagAppendAttributes(
           button, disabled = "disabled", `aria-disabled` = "true")
         button
       }
-      # Configuration inputs intentionally reuse stable Shiny input names so
-      # capability observers can remain generic. Give the inspector subtree a
-      # node-specific DOM identity so htmlOutput does not preserve the prior
-      # node's same-ID controls when selection changes.
-      htmltools::tags$div(id = session$ns(paste0("inspector_node__", node$id)),
+      # Activated contexts scope both DOM and server input identity. The
+      # unscoped legacy mode retains its original node-specific input names.
+      htmltools::tags$div(id = session$ns(paste0("inspector_node__", configuration_node_key(node$id))),
         `data-shinycap-node-id` = node$id,
         `data-shinycap-capability-id` = node$capability_id,
         `data-shinycap-graph-revision` = graph_revision(),
@@ -389,7 +419,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         htmltools::tags$script(htmltools::HTML(sprintf(
           "Shiny.setInputValue(%s,%s,{priority:'event'});",
           jsonlite::toJSON(session$ns("inspector_owner"), auto_unbox = TRUE),
-          jsonlite::toJSON(node$id, auto_unbox = TRUE)))),
+          jsonlite::toJSON(configuration_node_key(node$id), auto_unbox = TRUE)))),
         htmltools::tags$h2(capability$display_name),
         htmltools::tags$p(capability$description),
         htmltools::tags$div(
@@ -443,14 +473,15 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       )
     })
 
-    shiny::observeEvent(input$save_config, {
+    shiny::observeEvent(configuration_action_value("save_config"), {
       node <- selected_node()
       if (is.null(node)) return()
+      if (!is.null(shiny::isolate(configuration_context())) && !configuration_inspector_owned(node)) return()
       capability <- capability_registry_get(registry, node$capability_id)
       draft <- config_drafts()[[node$id]] %||% list()
       authored_config <- setNames(lapply(names(capability$config), function(name) {
         if (!is.null(draft[[name]])) return(draft[[name]])
-        input_value <- config_input_value(input, node$id, name)
+        input_value <- configuration_input_value(node, name)
         if (!is.null(input_value)) return(input_value)
         node$config[[name]]
       }), names(capability$config))
@@ -473,9 +504,10 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       publish_graph(reason = "configuration_applied")
     })
 
-    shiny::observeEvent(input$discard_config, {
+    shiny::observeEvent(configuration_action_value("discard_config"), {
       node <- selected_node()
       if (is.null(node)) return()
+      if (!is.null(shiny::isolate(configuration_context())) && !configuration_inspector_owned(node)) return()
       drafts <- config_drafts()
       drafts[[node$id]] <- NULL
       config_drafts(drafts)
@@ -692,6 +724,22 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       inspector_revision(inspector_revision() + 1L)
       invisible(config_drafts())
     }
+    # Hosts activate a durable inspection/editing context before publishing its
+    # checkpoint. Every activation rotates only transient UI authority, including
+    # a historical checkpoint in the same context. It never changes graph/cache.
+    set_configuration_context <- function(value) {
+      scalar <- function(x) is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x)
+      if (!is.list(value) || !length(value) || is.null(names(value)) ||
+          anyNA(names(value)) || any(!nzchar(names(value))) || anyDuplicated(names(value)) ||
+          !all(vapply(value, scalar, logical(1))))
+        stop("Configuration context requires a named record of nonempty scalar identities.", call. = FALSE)
+      configuration_context(value)
+      advance_configuration_form()
+      selected_id(NULL)
+      config_drafts(list())
+      inspector_revision(shiny::isolate(inspector_revision()) + 1L)
+      invisible(value)
+    }
     controls <- list(
       contract_version = "1.0.0",
       run_selected = command_run_selected,
@@ -722,6 +770,7 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
          set_graph = set_graph, set_cache = function(value) cache(value),
          config_drafts = shiny::reactive(config_drafts()),
          set_config_drafts = set_config_drafts,
+         set_configuration_context = set_configuration_context,
          graph_revision = shiny::reactive(graph_revision()),
          controls = controls, contract_version = "1.0.0")
   })

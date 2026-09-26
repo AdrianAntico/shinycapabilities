@@ -29,3 +29,11 @@ capability_canvas_server(
 \description{
 Capability workflow module server
 }
+\value{
+Session-local canvas controls. \code{set_configuration_context(record)}
+activates a named record of nonempty scalar identities and rotates an
+inspector generation on every call, including same-context restoration.
+It clears transient selection/drafts, never graph/cache; hosts restore the
+intended checkpoint drafts afterward. Once active, fields, ownership and
+Apply/Discard actions are isolated to the current activation and selection.
+}
