@@ -50,9 +50,12 @@ normalize_workflow_graph <- function(graph) {
 }
 
 #' Fingerprint a normalized graph
+#' Named configuration and metadata fields are unordered. Node and edge
+#' sequences stay ordered by their stable ids. This is not a cache signature
+#' and it does not authorize execution.
 #' @param graph Workflow graph list.
 #' @export
-graph_fingerprint <- function(graph) stable_hash(normalize_workflow_graph(graph))
+graph_fingerprint <- function(graph) workflow_identity_hash(normalize_workflow_graph(graph))
 
 #' Validate a proposed typed connection
 #' @param registry Capability registry.

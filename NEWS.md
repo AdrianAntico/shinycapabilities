@@ -1,3 +1,16 @@
+# shinycapabilities 0.3.1
+
+* Named configuration fields no longer change `node_signature()` or
+  `graph_fingerprint()`. Sequences remain ordered. Explicit null is not a
+  missing field. Duplicate names and unsupported types are refused.
+* A surface event calls `Shiny.setInputValue` only when that binding is a
+  function. A command invocation is not authorization.
+
+# shinycapabilities 0.3.0
+
+* Presentation and interaction foundation on the public main line, including
+  browser surfaces and the foundation review example.
+
 # shinycapabilities 0.2.0
 
 * Promote Direct Component Transport, Shared Browser Runtime, Persistent Dynamic UI,

@@ -7,7 +7,7 @@
 R 4.1 or later is required. Install a source archive with:
 
 ```r
-install.packages("shinycapabilities_0.3.0.tar.gz", repos = NULL, type = "source")
+install.packages("shinycapabilities_0.3.1.tar.gz", repos = NULL, type = "source")
 ```
 
 Node.js is not required to install or use the package; required browser assets are bundled.

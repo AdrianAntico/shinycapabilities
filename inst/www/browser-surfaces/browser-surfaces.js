@@ -8,7 +8,9 @@
   function emit(root, type, detail) {
     const value = Object.assign({ type, surface_id: root.id, timestamp: new Date().toISOString() }, detail || {});
     root.dispatchEvent(new CustomEvent("shinycapabilities:surface", { bubbles: true, detail: value }));
-    if (window.Shiny && root.id) Shiny.setInputValue(`${root.id}_event`, value, { priority: "event" });
+    if (typeof window.Shiny?.setInputValue === "function" && root.id) {
+      window.Shiny.setInputValue(`${root.id}_event`, value, { priority: "event" });
+    }
   }
 
   function ensureLayer() {

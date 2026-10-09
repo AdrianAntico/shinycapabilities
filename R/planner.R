@@ -86,12 +86,12 @@ plan_workflow <- function(registry, graph, target = NULL, cache = list(), force 
       node_id = id, capability_id = cap$id,
       action = if (current) "skipped/current" else "execute",
       reason = if (current) "cache_current" else if (is.null(cached)) "never_run" else "stale_or_failed",
-      signature = signature, dependencies = unique(vapply(dependencies, `[[`, "", "source"))
+      signature = signature, dependencies = sort(unique(vapply(dependencies, `[[`, "", "source")))
     )
   })
   list(
     valid = TRUE, target = target, force = isTRUE(force), order = order,
-    steps = steps, findings = list(), fingerprint = stable_hash(steps)
+    steps = steps, findings = list(), fingerprint = workflow_identity_hash(steps)
   )
 }
 

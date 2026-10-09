@@ -10,5 +10,7 @@ graph_fingerprint(graph)
 \item{graph}{Workflow graph list.}
 }
 \description{
-Fingerprint a normalized graph
+Fingerprint a normalized graph. Named configuration and metadata fields are
+unordered. Node and edge sequences stay ordered by their stable ids. This is
+not a cache signature and it does not authorize execution.
 }

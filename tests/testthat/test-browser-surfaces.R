@@ -77,6 +77,7 @@ test_that("browser assets include lifecycle accessibility and stress contracts",
   expect_match(js, "maxHistory", fixed = TRUE)
   expect_match(js, "requestFullscreen", fixed = TRUE)
   expect_match(js, "previousFocus", fixed = TRUE)
+  expect_match(js, "typeof window.Shiny?.setInputValue === \"function\"", fixed = TRUE)
   expect_match(js, 'tab.closest(".sc-tabs") === root', fixed = TRUE)
   expect_match(css, "prefers-reduced-motion", fixed = TRUE)
   expect_match(css, "forced-colors", fixed = TRUE)

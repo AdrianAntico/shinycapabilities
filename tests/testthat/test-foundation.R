@@ -15,6 +15,10 @@ test_that("frame is presentation-only and commands remain complete", {
   expect_false(grepl("</script><script>", safe, fixed = TRUE))
   payload <- sub(".*data-sc-commands=\"true\">(.*?)</script>.*", "\\1", safe)
   expect_identical(jsonlite::fromJSON(payload)$label, "</script><script>alert(1)</script>")
+  js <- paste(readLines(qualification_path("inst", "www", "foundation", "foundation.js"), warn = FALSE), collapse = "\n")
+  expect_match(js, "authorized:false", fixed = TRUE)
+  expect_false(grepl("authorized:true", js, fixed = TRUE))
+  expect_false("authorized" %in% names(command_record("review", "Request review")))
 })
 test_that("selection labels are not values", {
   groups <- normalize_selection_groups(c("Human label" = "canonical"))

@@ -8,6 +8,16 @@ test_that("graph normalization is deterministic", {
   )
   expect_equal(vapply(normalize_workflow_graph(graph)$nodes, `[[`, character(1), "id"), c("a", "b"))
   expect_identical(graph_fingerprint(graph), graph_fingerprint(graph))
+  configured <- graph
+  configured$nodes[[1]]$config <- list(b = 1, a = list(z = TRUE, m = NULL))
+  reordered <- configured
+  reordered$nodes[[1]]$config <- list(a = list(m = NULL, z = TRUE), b = 1)
+  expect_identical(graph_fingerprint(configured), graph_fingerprint(reordered))
+  expect_false(identical(graph_fingerprint(configured), graph_fingerprint(graph)))
+  missing_key <- configured
+  missing_key$nodes[[1]]$config$a$m <- NULL
+  missing_key$nodes[[1]]$config$a <- missing_key$nodes[[1]]$config$a[setdiff(names(missing_key$nodes[[1]]$config$a), "m")]
+  expect_false(identical(graph_fingerprint(configured), graph_fingerprint(missing_key)))
 })
 
 test_that("connection validation enforces port types", {

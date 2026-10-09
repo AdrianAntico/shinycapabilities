@@ -9,7 +9,7 @@ identity_fixture <- function() {
     config = list(dataset_revision = "input-r1", a = 1, nested = list(z = TRUE, a = "text")))
   graph <- normalize_workflow_graph(list(nodes = list(node), edges = list()))
   node <- graph$nodes[[1]]
-  cache <- list(source = list(status = "succeeded", signature = legacy_node_signature(node, cap, setNames(list(), character())),
+  cache <- list(source = list(status = "succeeded", signature = shinycapabilities:::legacy_node_signature(node, cap, setNames(list(), character())),
     outputs = list(native = list(value = c(NA_real_, 3), alternatives = c("a", "b"))),
     completed_at = "retained-original-time"))
   authority <- list(project_id = "p1", workflow_id = "w1", input_revision = "r1", owners = list(cap$resource_hints$owner))
@@ -23,7 +23,7 @@ identity_fixture <- function() {
 }
 
 test_that("canonical signatures distinguish maps, sequences and scalar types", {
-  x <- identity_fixture(); sig <- function(config) { n <- x$node; n$config <- config; node_signature(n, x$cap) }
+  x <- identity_fixture(); sig <- function(config) { n <- x$node; n$config <- config; shinycapabilities:::node_signature(n, x$cap) }
   c <- x$node$config
   expect_identical(sig(c), sig(c[rev(seq_along(c))]))
   d <- c; d$nested <- d$nested[c("a", "z")]
@@ -42,17 +42,27 @@ test_that("canonical signatures distinguish maps, sequences and scalar types", {
 })
 
 test_that("capability, implementation, owner and node identities remain exact", {
-  x <- identity_fixture(); original <- node_signature(x$node, x$cap)
+  x <- identity_fixture(); original <- shinycapabilities:::node_signature(x$node, x$cap)
   for (field in c("id", "version", "implementation_fingerprint")) {
     cap <- x$cap; cap[[field]] <- paste0(cap[[field]], "-changed")
-    expect_false(identical(original, node_signature(x$node, cap)))
+    expect_false(identical(original, shinycapabilities:::node_signature(x$node, cap)))
   }
   cap <- x$cap; cap$resource_hints$owner$sha <- "other"
-  expect_false(identical(original, node_signature(x$node, cap)))
+  expect_false(identical(original, shinycapabilities:::node_signature(x$node, cap)))
   node <- x$node; node$id <- "other"
-  expect_false(identical(original, node_signature(node, x$cap)))
-  expect_false(identical(node_signature(x$node, x$cap, list(input = "r1")),
-    node_signature(x$node, x$cap, list(input = "r2"))))
+  expect_false(identical(original, shinycapabilities:::node_signature(node, x$cap)))
+  expect_false(identical(shinycapabilities:::node_signature(x$node, x$cap, list(input = "r1")),
+    shinycapabilities:::node_signature(x$node, x$cap, list(input = "r2"))))
+  sig <- function(config) { n <- x$node; n$config <- config; shinycapabilities:::node_signature(n, x$cap) }
+  utf8 <- "caf\u00e9"
+  latin1 <- iconv(utf8, from = "UTF-8", to = "latin1")
+  Encoding(latin1) <- "latin1"
+  expect_identical(sig(list(label = utf8)), sig(list(label = latin1)))
+  expect_identical(sig(setNames(list(1), utf8)), sig(setNames(list(1), latin1)))
+  # Identity is UTF-8 code-unit identity, not Unicode normalization equivalence.
+  decomposed <- paste0("cafe", "\u0301")
+  expect_false(identical(sig(list(label = utf8)), sig(list(label = decomposed))))
+  expect_false(identical(sig(list(a = NULL)), sig(list())))
 })
 
 test_that("authenticated legacy migration preserves native results without replay", {
