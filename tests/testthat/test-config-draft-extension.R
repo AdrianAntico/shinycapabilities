@@ -65,8 +65,8 @@ testthat::test_that("inspector subtree identity follows the selected node", {
   testthat::expect_match(source, "node$id", fixed = TRUE)
   testthat::expect_match(source, "inspector_owner", fixed = TRUE)
   testthat::expect_match(source, "config_input_value(input, node$id, name)", fixed = TRUE)
-  testthat::expect_match(source,
-    "identical(input$inspector_owner %||% \"\", node$id)", fixed = TRUE)
+  testthat::expect_match(gsub("[[:space:]]+", "", source),
+    'identical(input$inspector_owner%||%"",node$id)', fixed = TRUE)
 })
 
 testthat::test_that("Shiny inputs publish drafts without a second browser bridge", {

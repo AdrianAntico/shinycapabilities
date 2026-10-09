@@ -1,8 +1,8 @@
 node_signature <- function(node, capability, dependency_results = list()) {
-  stable_hash(list(
-    capability_id = capability$id,
-    capability_version = capability$version,
-    implementation = capability$implementation_fingerprint,
+  workflow_identity_hash(list(
+    schema_version = "workflow_node_identity_v2",
+    node_id = node$id,
+    capability = workflow_capability_identity(capability),
     config = node$config,
     dependencies = dependency_results
   ))
@@ -72,20 +72,21 @@ plan_workflow <- function(registry, graph, target = NULL, cache = list(), force 
     cap <- capability_registry_get(registry, node$capability_id)
     dependencies <- Filter(function(edge) identical(edge$target, id), graph$edges)
     dependency_signatures <- setNames(
-      lapply(dependencies, function(edge) signatures[[edge$source]] %||% NA_character_),
-      vapply(dependencies, `[[`, character(1), "source")
+      lapply(dependencies, function(edge) list(source = edge$source,
+        source_port = edge$source_port, target_port = edge$target_port,
+        signature = signatures[[edge$source]] %||% NA_character_)),
+      vapply(dependencies, `[[`, character(1), "id")
     )
     signature <- node_signature(node, cap, dependency_signatures)
     signatures[[id]] <<- signature
     cached <- cache[[id]]
     current <- !isTRUE(force) && identical(cap$cache_policy, "reuse_current") &&
-      !is.null(cached) && identical(cached$status, "succeeded") &&
-      identical(cached$signature, signature)
+      workflow_cache_identity_current(cached, signature)
     list(
       node_id = id, capability_id = cap$id,
       action = if (current) "skipped/current" else "execute",
       reason = if (current) "cache_current" else if (is.null(cached)) "never_run" else "stale_or_failed",
-      signature = signature, dependencies = names(dependency_signatures)
+      signature = signature, dependencies = unique(vapply(dependencies, `[[`, "", "source"))
     )
   })
   list(
