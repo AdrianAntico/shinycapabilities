@@ -1,3 +1,9 @@
+# shinycapabilities 0.3.3
+
+* Advance the command-palette browser dependency identity with its changed
+  executable bundle so an existing browser does not retain the pre-0.3.2
+  dialog behavior under the same asset URL. Other component versions are unchanged.
+
 # shinycapabilities 0.3.2
 
 * Command palettes inside browser dialogs start a fresh search on each open.
