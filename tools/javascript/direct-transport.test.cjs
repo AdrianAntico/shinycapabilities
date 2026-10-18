@@ -4,13 +4,18 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 
-function harness() {
+function harness(resetClasses = false) {
   let mutation;
   const observers = [], elements = [], events = [];
   class Element {
     constructor(id, payload = true) {
       this.id = id; this.isConnected = true; this.dataset = { scDirectComponent: 'fixture' };
       this.payload = payload;
+      this.className = 'sc-direct-component-output';
+      this.classList = {
+        contains: name => this.className.split(/\s+/).includes(name),
+        add: name => { if (!this.classList.contains(name)) this.className += ' ' + name; }
+      };
     }
     setAttribute() {}
     appendChild() {}
@@ -39,8 +44,8 @@ function harness() {
   });
   const transport = window.ShinyCapabilitiesDirectTransport;
   transport.register('fixture', {
-    mount: (element, payload) => {events.push(['mount', element]); return {value: 1, model: payload};},
-    update: (handle, payload) => {events.push(['update', payload]); return {value: 2, model: payload};},
+    mount: (element, payload) => {if (resetClasses) element.className = 'component'; events.push(['mount', element]); return {value: 1, model: payload};},
+    update: (handle, payload, context) => {if (resetClasses) context.element.className = 'component'; events.push(['update', payload]); return {value: 2, model: payload};},
     resize: handle => events.push(['resize', handle.value]),
     destroy: (handle, element) => events.push(['destroy', element]),
   });
@@ -55,6 +60,30 @@ test('late static insertion mounts and a DOM move preserves the instance', () =>
   h.notify([e], [e]);
   assert.equal(h.transport.diagnostics().mounts, 1);
   assert.equal(h.transport.diagnostics().destroys, 0);
+});
+
+test('renderer replacement preserves an existing Shiny output binding, never inventing one', () => {
+  const h = harness(true), bound = h.add('bound');
+  bound.classList.add('shiny-bound-output');
+  h.notify([bound]); // Delayed component mount after Shiny has bound the output.
+  assert.equal(bound.classList.contains('shiny-bound-output'), true);
+  h.binding.renderValue(bound, {component:'fixture', payload:{value:2}, revision:2});
+  assert.equal(bound.classList.contains('shiny-bound-output'), true);
+  const fresh = h.add('fresh'); h.notify([fresh]);
+  assert.equal(fresh.classList.contains('shiny-bound-output'), false);
+  assert.equal(fresh.classList.contains('sc-direct-component-output'), true);
+});
+
+test('a throwing renderer retains existing binding and teardown markers', () => {
+  const h = harness(), e = h.add('failed'); e.classList.add('shiny-bound-output');
+  h.transport.register('throwing', {
+    mount(element) { element.className = 'component'; throw new Error('render failure'); },
+    update() {}, destroy() {}
+  });
+  h.binding.renderValue(e, {component:'throwing',payload:{},revision:1});
+  assert.equal(h.transport.diagnostics().errors,1);
+  assert.equal(e.classList.contains('shiny-bound-output'),true);
+  assert.equal(e.classList.contains('sc-direct-component-output'),true);
 });
 
 test('early patches wait for a full mount and stale patches do not overwrite them', () => {

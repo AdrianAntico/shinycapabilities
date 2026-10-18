@@ -1,3 +1,10 @@
+# shinycapabilities 0.3.4
+
+* Preserve Shiny's existing output-binding marker when a direct component
+  renderer replaces its CSS classes during delayed mount or update. Static
+  components do not acquire a fabricated Shiny binding. Advance the transport
+  asset identity so existing browsers receive the correction.
+
 # shinycapabilities 0.3.3
 
 * Advance the command-palette browser dependency identity with its changed

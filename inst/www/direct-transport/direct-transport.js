@@ -45,6 +45,7 @@
   };
   const deliver = (element, value, source = "render") => {
     const started = now();
+    const wasShinyBound = element.classList?.contains("shiny-bound-output");
     try {
       const type = value?.component || element.dataset.scDirectComponent;
       const definition = components.get(type);
@@ -88,6 +89,9 @@
       }
       // Renderers may replace className; retain the binding/lifecycle marker.
       element.classList?.add("sc-direct-component-output");
+      // Component renderers do not own Shiny's registration lifecycle. A late
+      // mount or update must not erase its marker or manufacture a new binding.
+      if (wasShinyBound) element.classList.add("shiny-bound-output");
       element.setAttribute("aria-busy", "false");
       element.dataset.scDirectRevision = String(instances.get(element.id)?.revision ?? "");
       element.dataset.scDirectLastMs = (now() - started).toFixed(3);
@@ -97,6 +101,11 @@
         early.forEach(message => applyUpdate(element, message));
       }
     } catch (error) { showError(element, error); }
+    finally {
+      // A failed renderer must remain eligible for Shiny teardown/recovery too.
+      element.classList?.add("sc-direct-component-output");
+      if (wasShinyBound) element.classList.add("shiny-bound-output");
+    }
   };
   const mountStatic = root => {
     root.querySelectorAll?.(".sc-direct-component-output [data-sc-direct-payload]").forEach(script => {
@@ -163,7 +172,7 @@
   const initialize = () => { registerBinding(); observeRemoval(); mountStatic(document); };
 
   window.ShinyCapabilitiesDirectTransport = {
-    version: "1.1.1",
+    version: "1.1.2",
     register(name, definition) {
       if (!name || !definition?.mount || !definition?.update || !definition?.destroy) {
         throw new Error("Direct components require mount, update, and destroy methods.");

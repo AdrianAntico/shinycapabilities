@@ -50,7 +50,7 @@ direct_transport_core_dependency <- function() {
   if (!nzchar(root)) root <- file.path("inst", "www", "direct-transport")
   htmltools::htmlDependency(
     name = "shinycapabilities-direct-transport",
-    version = "1.1.1",
+    version = "1.1.2",
     src = c(file = normalizePath(root, winslash = "/", mustWork = TRUE)),
     script = "direct-transport.js"
   )
