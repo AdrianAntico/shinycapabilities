@@ -1,5 +1,14 @@
 # Framework foundation 0.3.0
 
+### Palette lifecycle (0.3.2)
+
+A `command_palette()` inside `browser_dialog()` starts with an empty search
+and the first listed command when its owning dialog opens. Closing and
+reopening is a new discovery interaction. Escape follows the native dialog's
+dismissibility contract and returns focus through the existing overlay manager.
+Inline palettes retain Escape-to-clear. Enter chooses a command; the host still
+owns execution authorization. Nested surface events do not reset another palette.
+
 The foundation scopes presentation around ordinary Shiny components. It does not
 replace reactive state, session ownership, routing, persistence, or execution.
 

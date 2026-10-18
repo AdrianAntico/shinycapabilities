@@ -22,6 +22,20 @@ function Palette({ host, model, emit }) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const input = useRef(null), scroll = useRef(null);
+  // A palette embedded in a native framework dialog shares that dialog's
+  // lifecycle. Inline palettes retain their existing query/Escape contract.
+  const dialog = host.closest('dialog[data-sc-surface="dialog"]');
+  const dismissible = dialog && dialog.dataset.dismissible !== 'false';
+  useEffect(() => {
+    if (!dialog) return;
+    const opened = event => {
+      if (event.target !== dialog || event.detail?.type !== 'open') return;
+      setQuery(""); setActive(0);
+      if (scroll.current) scroll.current.scrollTop = 0;
+    };
+    dialog.addEventListener('shinycapabilities:surface', opened);
+    return () => dialog.removeEventListener('shinycapabilities:surface', opened);
+  }, [dialog]);
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
     return items.map((item, position) => ({ ...item, position, score: score(item, term) }))
@@ -56,7 +70,7 @@ function Palette({ host, model, emit }) {
     if (event.key === "ArrowDown") { event.preventDefault(); const next = Math.min(filtered.length - 1, active + 1); setActive(next); virtualizer.scrollToIndex(next); }
     else if (event.key === "ArrowUp") { event.preventDefault(); const next = Math.max(0, active - 1); setActive(next); virtualizer.scrollToIndex(next); }
     else if (event.key === "Enter") { event.preventDefault(); activate(filtered[active]); }
-    else if (event.key === "Escape") { event.preventDefault(); setQuery(""); input.current?.blur(); }
+    else if (event.key === "Escape" && !dialog) { event.preventDefault(); setQuery(""); input.current?.blur(); }
     else if (event.key === "Home") { event.preventDefault(); setActive(0); virtualizer.scrollToIndex(0); }
     else if (event.key === "End") { event.preventDefault(); const last = Math.max(0, filtered.length - 1); setActive(last); virtualizer.scrollToIndex(last); }
   };
@@ -78,7 +92,7 @@ function Palette({ host, model, emit }) {
             <span><small>{item.group || "Commands"}</small><strong>{item.label}</strong>{item.description && <em>{item.description}</em>}</span>
             {item.shortcut && <kbd>{item.shortcut}</kbd>}</div>;
         })}</div>}
-    </div><div className="sc-direct-palette-help"><span>↑↓ Navigate</span><span>Enter Run</span><span>Esc Clear</span></div>
+    </div><div className="sc-direct-palette-help"><span>↑↓ Navigate</span><span>Enter Choose</span><span>{dialog ? (dismissible ? 'Esc Close' : 'Use dialog controls to close') : 'Esc Clear'}</span></div>
   </div>;
 }
 

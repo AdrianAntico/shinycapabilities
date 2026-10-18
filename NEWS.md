@@ -1,3 +1,10 @@
+# shinycapabilities 0.3.2
+
+* Command palettes inside browser dialogs start a fresh search on each open.
+  Escape instructions reflect the enclosing dialog contract; inline palettes
+  retain their clear-search behavior. Enter chooses a command and does not
+  imply authorization to execute analytical work. Public R signatures are unchanged.
+
 # shinycapabilities 0.3.1
 
 * Named configuration fields no longer change `node_signature()` or
