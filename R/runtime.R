@@ -16,6 +16,11 @@ runtime_failure <- function(type, message, node_id, capability_id,
   ), class = c("shinycap_runtime_failure", "list"))
 }
 
+runtime_refusal_details <- function(error) {
+  if (inherits(error, "shinycap_capability_refusal") && is.list(error$refusal))
+    list(owner_refusal = error$refusal) else list()
+}
+
 runtime_worker <- function(capability, context, config, inputs) {
   validation <- if (is.function(capability$validate)) {
     capability$validate(context, config, inputs)
@@ -23,14 +28,18 @@ runtime_worker <- function(capability, context, config, inputs) {
     list(valid = TRUE)
   }
   if (identical(validation$valid, FALSE)) {
-    return(list(ok = FALSE, validation = TRUE, error = validation))
+    return(list(ok = FALSE, validation = TRUE, error = validation,
+      details = validation$details %||% list()))
   }
   result <- tryCatch(
     capability$execute(context, config, inputs),
     error = function(error) error
   )
   if (inherits(result, "error")) {
-    return(list(ok = FALSE, validation = FALSE, error = conditionMessage(result)))
+    # Transport explicit capability refusals as data, never as successful output.
+    # Other errors retain the existing exception-text contract.
+    return(list(ok = FALSE, validation = FALSE, error = conditionMessage(result),
+      details = runtime_refusal_details(result)))
   }
   outputs <- if (is.list(result) && !is.null(result$outputs)) {
     result$outputs
@@ -173,7 +182,7 @@ runtime_poll_jobs <- function(runtime) {
       runtime_finalize_failure(
         runtime, node_id,
         if (isTRUE(outcome$validation)) "validation" else "execution",
-        message
+        message, details = outcome$details %||% list()
       )
     } else {
       runtime_finalize_success(runtime, node_id, outcome)
@@ -251,7 +260,7 @@ runtime_start_inline <- function(runtime, node_id, capability, node) {
     runtime_finalize_failure(
       runtime, node_id,
       if (isTRUE(outcome$validation)) "validation" else "execution",
-      message
+      message, details = outcome$details %||% list()
     )
   } else {
     runtime_finalize_success(runtime, node_id, outcome)

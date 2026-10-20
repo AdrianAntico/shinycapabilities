@@ -1,3 +1,9 @@
+# shinycapabilities 0.3.6
+
+* Preserve explicit capability refusal records in failed inline and background
+  receipts. Validation details and typed owner conditions remain inspectable;
+  neither creates a successful output. Ordinary exception behavior is unchanged.
+
 # shinycapabilities 0.3.5
 
 * Normalize DOM and jQuery scopes in the native browser-control/action input

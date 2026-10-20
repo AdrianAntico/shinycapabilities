@@ -143,10 +143,13 @@ execute_workflow_plan <- function(registry, graph, plan, context = list(), cache
     events <- append(events, list(list(node_id = id, state = "running")))
     outcome <- tryCatch(
       cap$execute(context, node$config, inputs),
-      error = function(error) structure(list(message = conditionMessage(error)), class = "shinycap_error")
+      error = function(error) structure(list(message = conditionMessage(error),
+        details = runtime_refusal_details(error)), class = "shinycap_error")
     )
     if (inherits(outcome, "shinycap_error")) {
-      results[[id]] <- list(status = "failed", error = outcome$message, signature = step$signature)
+      failure <- if (length(outcome$details)) runtime_failure("execution",
+        outcome$message, id, step$capability_id, details = outcome$details) else outcome$message
+      results[[id]] <- list(status = "failed", error = failure, signature = step$signature)
       events <- append(events, list(list(node_id = id, state = "failed")))
     } else {
       outputs <- if (is.list(outcome) && !is.null(outcome$outputs)) outcome$outputs else outcome
