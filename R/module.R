@@ -286,17 +286,21 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     }
     configuration_action_key <- function(action) {
       if (is.null(configuration_context())) return(action)
-      node <- selected_node()
-      paste0(action, "__", configuration_node_key(node$id %||% "unselected"))
+      # The command address depends on selection, not the selected graph record.
+      # Reading selected_node() here replays the last action-button value whenever
+      # a host updates that node (for example ready -> blocked after Apply).
+      paste0(action, "__", configuration_node_key(selected_id() %||% "unselected"))
     }
     configuration_action_value <- function(action) input[[configuration_action_key(action)]]
 
-    publish_graph <- function(ack_mutation_id = NULL, reason = "server_publication") {
-      graph_revision(shiny::isolate(graph_revision()) + 1L)
+    mutation_receipts <- list()
+    publish_graph <- function(ack_mutation_id = NULL, reason = "server_publication",
+        advance = TRUE, mutation_result = NULL) {
+      if (advance) graph_revision(shiny::isolate(graph_revision()) + 1L)
       payload <- list(
         bridgeVersion = "1.0.0", id = session$ns("canvas"), graph = shiny::isolate(graph()),
         graphRevision = shiny::isolate(graph_revision()), ackMutationId = ack_mutation_id,
-        reason = reason
+        reason = reason, mutationResult = mutation_result
       )
       payload <- json_object_payload(payload)
       session$sendCustomMessage("shinycapabilities:set-graph", payload)
@@ -314,8 +318,30 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         "capability_dropped", "move_completed", "resize_completed",
         "connection_accepted", "connection_removed", "node_removed", "node_duplicated", "group_created"
       )) {
-        graph(normalize_workflow_graph(event$graph))
-        publish_graph(event$mutationId %||% NULL, paste0("client_", event$type))
+        identity <- event$mutationId
+        valid_identity <- is.character(identity) && length(identity) == 1L && !is.na(identity) && nzchar(identity)
+        request_hash <- digest::digest(list(type = event$type, graph = event$graph,
+          baseGraphRevision = event$baseGraphRevision), algo = "sha256")
+        previous <- if (valid_identity) mutation_receipts[[identity]] else NULL
+        if (!is.null(previous)) {
+          result <- if (identical(previous$request_hash, request_hash)) previous$result else
+            list(accepted = FALSE, code = "mutation_identity_reused", message = "This graph request identity was reused for different content. Review the current canvas.")
+          publish_graph(if (valid_identity) identity else NULL, "mutation_receipt", advance = FALSE, mutation_result = result)
+          return()
+        }
+        admitted <- admit_graph_mutation(registry, event, graph_revision())
+        result <- admitted[c("accepted", "code", "message")]
+        if (isTRUE(admitted$accepted)) {
+          changed <- !identical(graph(), admitted$graph)
+          graph(admitted$graph)
+          publish_graph(identity, paste0("client_", event$type), advance = changed, mutation_result = result)
+        } else {
+          publish_graph(if (valid_identity) identity else NULL, "mutation_refused", advance = FALSE, mutation_result = result)
+        }
+        if (valid_identity) {
+          mutation_receipts[[identity]] <<- list(request_hash = request_hash, result = result)
+          if (length(mutation_receipts) > 256L) mutation_receipts <<- tail(mutation_receipts, 256L)
+        }
       }
       if (identical(event$type, "node_selected")) {
         if (!is.null(shiny::isolate(configuration_context())) &&
@@ -704,6 +730,13 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
     })
 
     set_graph <- function(value) {
+      normalized <- normalize_workflow_graph(value)
+      if (identical(shiny::isolate(graph()), normalized)) {
+        # A remounted canvas may need the snapshot, but unchanged publication is
+        # not a new graph revision and must not invalidate graph dependents.
+        publish_graph(reason = "graph_replaced", advance = FALSE)
+        return(invisible(shiny::isolate(graph())))
+      }
       runtime <- active_runtime()
       if (!is.null(runtime)) {
         cancel_workflow_runtime(runtime)
@@ -711,7 +744,6 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         active_runtime(NULL)
       }
       runtime_snapshot(NULL)
-      normalized <- normalize_workflow_graph(value)
       selected <- selected_id()
       node_ids <- vapply(normalized$nodes, `[[`, character(1), "id")
       if (!is.null(selected) && !selected %in% node_ids) selected_id(NULL)

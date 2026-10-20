@@ -153,7 +153,15 @@ function emit(element, type, payload, graph) {
   const nonce = `${Date.now()}-${Math.random()}`;
   const protocol = element.__shinyCapabilitiesProtocol;
   const mutationId = `${type}-${nonce}`;
-  if (GRAPH_MUTATION_TYPES.has(type)) protocol?.pendingGraphMutations.add(mutationId);
+  if (GRAPH_MUTATION_TYPES.has(type) && protocol) {
+    protocol.pendingGraphMutations.add(mutationId);
+    protocol.reportMutation("pending", "Applying graph edit: awaiting the server's decision.");
+    clearTimeout(protocol.pendingTimeout);
+    protocol.pendingTimeout = setTimeout(() => {
+      if (protocol.pendingGraphMutations.size)
+        protocol.reportMutation("unconfirmed", "Graph edit not confirmed. The connection may be busy or unavailable. Review the current canvas before trying again.");
+    }, 15000);
+  }
   if (type === "node_selected" && protocol) protocol.pendingSelectionMutation = mutationId;
   protocol?.publishState();
   const event = {
@@ -385,6 +393,10 @@ function Canvas({ element, value }) {
     element.dataset.shinycapPendingMutations = String(protocol.current.pendingGraphMutations.size);
     element.dataset.shinycapGraphSynchronized = String(protocol.current.pendingGraphMutations.size === 0);
   };
+  protocol.current.reportMutation = (status, message) => {
+    element.dataset.shinycapMutationStatus = status;
+    setConnectionFeedback({ status, valid: status === "applied", message });
+  };
   element.__shinyCapabilitiesProtocol = protocol.current;
   protocol.current.publishState();
   const flow = useReactFlow();
@@ -403,12 +415,25 @@ function Canvas({ element, value }) {
       const revision = Number(message.graphRevision);
       const ordered = Number.isFinite(revision);
       const ack = message.ackMutationId || null;
-      const publication = `${ordered ? revision : "legacy"}:${ack || ""}:${message.reason || ""}`;
+      const resolvesPending = protocol.current.pendingGraphMutations.has(ack);
+      const publication = `${ordered ? revision : "legacy"}:${ack || ""}:${message.reason || ""}:${message.mutationResult?.code || ""}`;
       if (publication === protocol.current.lastPublication) return;
+      // A receipt resolves its exact request even if a newer authoritative
+      // snapshot has already arrived. It cannot roll that snapshot backward.
+      if (ack && resolvesPending) {
+        protocol.current.pendingGraphMutations.delete(ack);
+        const result = message.mutationResult;
+        const status = result?.accepted === false
+          ? (result.code === "stale_graph_revision" ? "stale" : "refused") : "applied";
+        protocol.current.reportMutation(status,
+          result?.accepted === false ? result.message : "Graph edit accepted and applied.");
+        if (!protocol.current.pendingGraphMutations.size) clearTimeout(protocol.current.pendingTimeout);
+        protocol.current.publishState();
+      }
       if (ordered && revision < protocol.current.serverRevision) return;
       if (ordered && revision === protocol.current.serverRevision &&
           protocol.current.pendingGraphMutations.size &&
-          !protocol.current.pendingGraphMutations.has(ack)) return;
+          !resolvesPending) return;
       if (!ordered && protocol.current.pendingGraphMutations.size) return;
       if (ack) protocol.current.pendingGraphMutations.delete(ack);
       if (ordered) protocol.current.serverRevision = revision;
@@ -441,6 +466,8 @@ function Canvas({ element, value }) {
     window.Shiny?.addCustomMessageHandler?.("shinycapabilities:v1:set-graph", onSetGraph);
     return () => cancelAnimationFrame(restorationFrame.current);
   }, [element.id, readOnly, updateNodeInternals, value.capabilities]);
+
+  useEffect(() => () => clearTimeout(protocol.current.pendingTimeout), []);
 
   useEffect(() => {
     const onSelectionAck = (message) => {
@@ -800,6 +827,7 @@ function Canvas({ element, value }) {
       </aside>}
       <div
         className={`sc-connection-feedback${connectionFeedback ? " is-visible" : ""}${connectionFeedback?.valid === false ? " is-rejected" : ""}`}
+        data-mutation-status={connectionFeedback?.status || undefined}
         role="status"
         aria-live="polite"
       >

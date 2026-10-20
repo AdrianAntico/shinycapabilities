@@ -1,3 +1,16 @@
+# shinycapabilities 0.3.9
+
+* Bind configuration actions to selection identity, preventing host state changes
+  from replaying Apply. Unchanged set_graph snapshots retain their revision and
+  do not cancel a running workflow.
+* Require browser graph edits to carry mutationId and baseGraphRevision. Return
+  explicit accepted/refused receipts, reject stale or malformed edits, and retain
+  a bounded session receipt cache for duplicate delivery. Incomplete authoring
+  graphs remain allowed; required inputs are still enforced before execution.
+* Resolve exact pending requests on receipt, restore the authoritative graph on
+  refusal, and report unconfirmed requests after 15 seconds without inventing an
+  outcome. Advance the canvas asset identity.
+
 # shinycapabilities 0.3.6
 
 * Preserve explicit capability refusal records in failed inline and background

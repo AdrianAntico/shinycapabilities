@@ -34,7 +34,7 @@ testthat::test_that("authoritative graph revisions advance monotonically", {
     ))
     session$flushReact()
     session$setInputs(canvas_event = list(
-      type = "capability_dropped", mutationId = "mutation-1",
+      type = "capability_dropped", mutationId = "mutation-1", baseGraphRevision = 0L,
       graph = list(nodes = nodes, edges = list())
     ))
     session$flushReact()
@@ -49,7 +49,7 @@ testthat::test_that("authoritative graph revisions advance monotonically", {
     testthat::expect_identical(session$returned$selection(), "target")
 
     session$setInputs(canvas_event = list(
-      type = "connection_accepted", mutationId = "mutation-2",
+      type = "connection_accepted", mutationId = "mutation-2", baseGraphRevision = 1L,
       graph = list(nodes = nodes, edges = list(edge))
     ))
     session$flushReact()

@@ -12,6 +12,18 @@ install.packages("shinycapabilities_0.3.1.tar.gz", repos = NULL, type = "source"
 
 Node.js is not required to install or use the package; required browser assets are bundled.
 
+Graph edits use the existing canvas event/publication bridge. A mutation requires
+`mutationId`, `baseGraphRevision`, and the proposed graph. The bundled canvas
+supplies these fields; custom senders must do so too. Missing or stale revision
+authority receives a refusal rather than overwriting the current graph. Graph
+publications include `mutationResult` (`accepted`, `code`, `message`) and the exact
+`ackMutationId`. Missing required inputs may remain in an authoring graph but do
+not authorize execution. Unchanged `set_graph()` snapshots republish at the same
+revision; they do not cancel execution or invalidate graph dependents. The last
+256 session receipts deduplicate delivery; older requests remain protected by
+their base revision. A 15-second unconfirmed message is uncertainty, not failure
+or success. No automatic replay is performed.
+
 The package includes browser-native controls, overlays, dialogs, notifications,
 navigation, file upload/download controls, and output shells. Host applications
 retain ownership of their domain behavior and execution policy.

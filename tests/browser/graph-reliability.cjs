@@ -1,0 +1,46 @@
+// Transport fixture: server decisions are explicit fixtures, never analytical evidence.
+const assert=require('node:assert/strict'),path=require('node:path');
+const {chromium}=require(path.join(process.env.USERPROFILE,'.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright'));
+(async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});try{
+ const page=await browser.newPage({viewport:{width:1366,height:768}});
+ await page.setContent('<div id="canvas" style="height:640px;width:1100px"></div>');
+ await page.evaluate(()=>{window.events=[];window.handlers={};window.Shiny={setInputValue:(name,value)=>{if(name==='canvas_event')events.push(value)},addCustomMessageHandler:(name,handler)=>handlers[name]=handler};window.ShinyCapabilitiesDirectTransport={register:(name,api)=>window.canvasApi=api};});
+ await page.addStyleTag({path:path.resolve(__dirname,'../../inst/www/direct-transport/shinycapabilities.css')});
+ await page.addScriptTag({path:path.resolve(__dirname,'../../inst/www/direct-transport/shinycapabilities.js')});
+ await page.evaluate(()=>{window.el=document.getElementById('canvas');window.handle=canvasApi.mount(el,{graph:{nodes:[],edges:[]},graphRevision:0,capabilities:[{id:'test.source',displayName:'Source',inputs:{},outputs:{},config:{},version:'1.0.0'}],options:{}});window.insert=id=>el.dispatchEvent(new CustomEvent('shinycapabilities:v1:insert',{detail:{capabilityId:'test.source',commandId:id}}));window.deliver=m=>handlers['shinycapabilities:v1:set-graph']({id:'canvas',...m});});
+ await page.waitForFunction(()=>handlers['shinycapabilities:v1:set-graph']);
+ await page.evaluate(()=>insert('one'));
+ await page.waitForFunction(()=>events.length===1);
+ assert.equal(await page.locator('#canvas').getAttribute('data-shinycap-pending-mutations'),'1');
+ await page.evaluate(()=>insert('one'));
+ assert.equal(await page.evaluate(()=>events.length),1);
+ await page.evaluate(()=>{window.first=events[0];deliver({graphRevision:1,ackMutationId:first.mutationId,graph:first.graph,reason:'client_capability_dropped',mutationResult:{accepted:true,code:'accepted'}})});
+ await page.waitForFunction(()=>el.dataset.shinycapMutationStatus==='applied');
+ assert.equal(await page.locator('#canvas .sc-node').count(),1);
+ assert.equal(await page.locator('#canvas').getAttribute('data-shinycap-pending-mutations'),'0');
+ await page.evaluate(()=>insert('two'));
+ await page.waitForFunction(()=>events.length===2);
+ await page.evaluate(()=>deliver({graphRevision:1,ackMutationId:events[1].mutationId,graph:first.graph,reason:'mutation_refused',mutationResult:{accepted:false,code:'invalid_graph_edit',message:'Fixture refusal: current graph preserved.'}}));
+ await page.waitForFunction(()=>el.dataset.shinycapMutationStatus==='refused');
+ assert.equal(await page.locator('#canvas .sc-node').count(),1);
+ assert.equal(await page.locator('#canvas').getAttribute('data-shinycap-pending-mutations'),'0');
+ assert.match(await page.locator('.sc-connection-feedback').innerText(),/Fixture refusal/);
+ await page.evaluate(()=>insert('three'));
+ await page.waitForFunction(()=>events.length===3);
+ await page.evaluate(()=>deliver({graphRevision:2,ackMutationId:events[2].mutationId,graph:first.graph,reason:'mutation_refused',mutationResult:{accepted:false,code:'stale_graph_revision',message:'The workflow changed. Review it before retrying.'}}));
+ await page.waitForFunction(()=>el.dataset.shinycapMutationStatus==='stale');
+ assert.equal(await page.locator('#canvas .sc-node').count(),1);
+ await page.evaluate(()=>deliver({graphRevision:0,graph:{nodes:[],edges:[]},reason:'old'}));
+ assert.equal(await page.locator('#canvas .sc-node').count(),1);
+ await page.evaluate(()=>insert('four'));
+ await page.waitForFunction(()=>events.length===4);
+ // Exercise the actual finite timer, not an invented successful receipt.
+ await page.waitForFunction(()=>el.dataset.shinycapMutationStatus==='unconfirmed',{},{timeout:17000});
+ assert.equal(await page.locator('#canvas').getAttribute('data-shinycap-pending-mutations'),'1');
+ await page.evaluate(()=>deliver({graphRevision:3,ackMutationId:events[3].mutationId,graph:events[3].graph,reason:'client_capability_dropped',mutationResult:{accepted:true,code:'accepted'}}));
+ await page.waitForFunction(()=>el.dataset.shinycapMutationStatus==='applied');
+ assert.equal(await page.locator('#canvas .sc-node').count(),2);
+ assert.equal(await page.locator('#canvas').getAttribute('data-shinycap-pending-mutations'),'0');
+ await page.evaluate(()=>canvasApi.destroy(handle,el));
+ console.log(JSON.stringify({status:'PASS',checks:['accepted','duplicate command','refused rollback','stale refusal','old publication rejected','finite unconfirmed','late acknowledgment'],analyticalCalls:0}));
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -110,7 +110,7 @@ testthat::test_that("server accepts and retains client node positions", {
       )
     )
     session$setInputs(canvas_event = list(
-      type = "capability_dropped",
+      type = "capability_dropped", mutationId = "position-insert", baseGraphRevision = 0L,
       graph = list(nodes = accepted, edges = list())
     ))
     session$flushReact()
@@ -151,7 +151,7 @@ testthat::test_that("explicit connection removal preserves nodes and permits rec
     session$setInputs(canvas_event = list(type = "node_selected", nodeId = "source", nonce = "initialize"))
     session$flushReact()
     session$setInputs(canvas_event = list(
-      type = "connection_removed",
+      type = "connection_removed", mutationId = "remove", baseGraphRevision = 0L,
       edgeIds = list(edge$id),
       graph = list(nodes = nodes, edges = list()),
       nonce = "remove"
@@ -162,7 +162,7 @@ testthat::test_that("explicit connection removal preserves nodes and permits rec
     testthat::expect_identical(removed$nodes, before$nodes)
 
     session$setInputs(canvas_event = list(
-      type = "connection_accepted",
+      type = "connection_accepted", mutationId = "reconnect", baseGraphRevision = 1L,
       graph = list(nodes = nodes, edges = list(edge)),
       nonce = "reconnect"
     ))
