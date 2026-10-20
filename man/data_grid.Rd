@@ -53,4 +53,8 @@ Supported column options are `header_name`, `type`, `format`,
 `digits`, `currency`, `pinned`, `width`, `min_width`, `max_width`, `hide`,
 `sortable`, `filter`, and `resizable`. Formats include `raw`, `number`,
 `compact`, `percent`, `currency`, `date`, and `datetime`.
+The logical option \code{defer_until_visible} (default \code{FALSE}) postpones
+grid construction until viewport exposure, keyboard focus or printing. All rows
+remain in the delivered payload. No analytical work is deferred or repeated.
+Without IntersectionObserver, mounting is eager.
 }

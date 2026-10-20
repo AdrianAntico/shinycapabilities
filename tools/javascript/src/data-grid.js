@@ -162,8 +162,9 @@ function statePayload(api) {
 
 function renderGrid(element, payload) {
   const previous = gridInstances.get(element);
-  previous?.controller.abort();
-  previous?.api.destroy();
+  previous?.observer?.disconnect();
+  previous?.controller?.abort();
+  previous?.api?.destroy();
   element.replaceChildren();
   element.className = `html-widget sc-data-grid sc-data-grid--${payload.options.density}`;
   const controller = new AbortController();
@@ -249,6 +250,12 @@ function renderGrid(element, payload) {
 
 function updateGrid(element, message) {
   const instance = gridInstances.get(element);
+  if (instance?.pending) {
+    instance.payload = { ...instance.payload, ...message };
+    instance.updates = { ...instance.updates, ...message };
+    instance.button.textContent = `Show table (${rowRecords(instance.payload.rows).length.toLocaleString()} rows)`;
+    return;
+  }
   if (!instance?.api) return;
   if (message.rows) {
     const rows = rowRecords(message.rows);
@@ -268,8 +275,39 @@ function updateGrid(element, message) {
   if (message.loading === false) instance.api.hideOverlay();
 }
 
+function mountGrid(element, payload) {
+  if (!payload.options?.defer_until_visible || typeof IntersectionObserver !== 'function') {
+    renderGrid(element, payload);
+    return;
+  }
+  const previous = gridInstances.get(element);
+  previous?.observer?.disconnect(); previous?.controller?.abort(); previous?.api?.destroy();
+  const controller = new AbortController();
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = 'sc-grid-deferred';
+  button.textContent = `Show table (${rowRecords(payload.rows).length.toLocaleString()} rows)`;
+  element.replaceChildren(button);
+  const state = { pending: true, payload, updates: {}, controller, button };
+  gridInstances.set(element, state);
+  const activate = () => {
+    if (gridInstances.get(element) !== state || !element.isConnected) return;
+    const restoreFocus = element.contains(document.activeElement);
+    renderGrid(element, state.payload);
+    updateGrid(element, state.updates);
+    if (restoreFocus) element.querySelector('input, [role="grid"], button')?.focus();
+  };
+  state.observer = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting && entry.intersectionRect.width > 0 &&
+        entry.intersectionRect.height > 0)) activate();
+  });
+  state.observer.observe(element);
+  button.addEventListener('click', activate, { signal: controller.signal });
+  element.addEventListener('focusin', activate, { signal: controller.signal });
+  window.addEventListener('beforeprint', activate, { signal: controller.signal });
+}
+
 window.ShinyCapabilitiesDirectTransport.register("data_grid", {
-  mount(element, payload) { renderGrid(element, payload); return { element, model: payload }; },
+  mount(element, payload) { mountGrid(element, payload); return { element, model: payload }; },
   update(handle, patch) { handle.model = { ...handle.model, ...patch }; updateGrid(handle.element, patch); return handle; },
   resize(handle) {
     const api = gridInstances.get(handle.element)?.api;
@@ -277,6 +315,7 @@ window.ShinyCapabilitiesDirectTransport.register("data_grid", {
   },
   destroy(handle) {
     const instance = gridInstances.get(handle.element);
+    instance?.observer?.disconnect();
     instance?.controller?.abort();
     instance?.api?.destroy();
     gridInstances.delete(handle.element);

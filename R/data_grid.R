@@ -85,7 +85,7 @@ normalize_data_grid_options <- function(options) {
   if (!is.list(options)) stop("options must be a list.", call. = FALSE)
   allowed <- c("selection", "quick_filter", "column_controls", "copy_selected",
     "density", "row_height", "header_height", "publish_state", "accessibility_mode",
-    "empty_message", "loading_message", "animate_rows")
+    "empty_message", "loading_message", "animate_rows", "defer_until_visible")
   unknown <- setdiff(names(options), allowed)
   if (length(unknown)) stop("Unsupported grid option: ", unknown[[1]], call. = FALSE)
   output <- utils::modifyList(list(
@@ -93,12 +93,15 @@ normalize_data_grid_options <- function(options) {
     copy_selected = TRUE, density = "compact", row_height = NULL,
     header_height = NULL, publish_state = TRUE, accessibility_mode = "virtualized",
     empty_message = "No rows to display.", loading_message = "Loading data...",
-    animate_rows = FALSE
+    animate_rows = FALSE, defer_until_visible = FALSE
   ), options)
   output$selection <- match.arg(output$selection, c("none", "single", "multiple"))
   output$density <- match.arg(output$density, c("compact", "comfortable"))
   output$accessibility_mode <- match.arg(output$accessibility_mode,
     c("virtualized", "paginated"))
+  if (!is.logical(output$defer_until_visible) ||
+      length(output$defer_until_visible) != 1L || is.na(output$defer_until_visible))
+    stop("defer_until_visible must be TRUE or FALSE.", call. = FALSE)
   output
 }
 
@@ -121,6 +124,10 @@ normalize_data_grid_options <- function(options) {
 #' `digits`, `currency`, `pinned`, `width`, `min_width`, `max_width`, `hide`,
 #' `sortable`, `filter`, and `resizable`. Formats include `raw`, `number`,
 #' `compact`, `percent`, `currency`, `date`, and `datetime`.
+#' The logical option `defer_until_visible` (default `FALSE`) postpones grid
+#' construction until the table enters the viewport, receives keyboard focus,
+#' or printing begins. All rows remain in the delivered payload; no analytical
+#' work is deferred or repeated. Without IntersectionObserver, mounting is eager.
 #'
 #' @export
 data_grid <- function(data, columns = NULL, row_id = NULL, options = list(),
