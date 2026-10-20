@@ -1,3 +1,10 @@
+# shinycapabilities 0.3.5
+
+* Normalize DOM and jQuery scopes in the native browser-control/action input
+  bindings. Dynamically inserted Shiny modals no longer interrupt input binding
+  with `scope.querySelectorAll is not a function`. Scope membership and initial
+  action values are unchanged. Advance the browser asset identity.
+
 # shinycapabilities 0.3.4
 
 * Preserve Shiny's existing output-binding marker when a direct component

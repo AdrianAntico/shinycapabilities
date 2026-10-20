@@ -1,6 +1,6 @@
 browser_controls_dependency <- function() {
   htmltools::htmlDependency(
-    name = "shinycapabilities-browser-controls", version = "1.1.0",
+    name = "shinycapabilities-browser-controls", version = "1.1.1",
     src = c(file = "www/browser-controls"), package = "shinycapabilities",
     script = "browser-controls.js", stylesheet = "browser-controls.css"
   )

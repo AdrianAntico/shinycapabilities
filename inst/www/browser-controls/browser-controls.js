@@ -139,7 +139,9 @@
     window.__scBrowserControlsRegistered = true;
 
     const controls = new Shiny.InputBinding();
-    controls.find = (scope) => scope.querySelectorAll(".sc-browser-control[data-sc-control]");
+    // Shiny supplies both DOM roots and jQuery scopes (notably modal insertion).
+    // Use the same scope normalization as the maintained component bindings.
+    controls.find = (scope) => window.jQuery(scope).find(".sc-browser-control[data-sc-control]");
     controls.getId = (root) => root.id;
     controls.getValue = value;
     controls.setValue = setValue;
@@ -155,7 +157,7 @@
 
     const actionCounts = new WeakMap();
     const actions = new Shiny.InputBinding();
-    actions.find = (scope) => scope.querySelectorAll(".sc-browser-action[data-sc-action]");
+    actions.find = (scope) => window.jQuery(scope).find(".sc-browser-action[data-sc-action]");
     actions.getId = (button) => button.id;
     actions.getValue = (button) => actionCounts.has(button) ? actionCounts.get(button) : null;
     actions.subscribe = (button, callback) => {
