@@ -1,3 +1,7 @@
+# shinycapabilities 0.3.12
+
+- Selection portals respect available viewport height and width. The option list shrinks and scrolls while search/close/status remain reachable; asynchronous positioning tolerates a closed portal. Restored-input semantics are unchanged.
+
 # shinycapabilities 0.3.11
 
 - Server-side selection and browser-control value updates now notify the subscribed Shiny input. Saved editors no longer display a different value from the one used by server actions. Metadata-only and unchanged-value updates remain quiet; selection user-gesture events are not fabricated.

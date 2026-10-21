@@ -118,10 +118,10 @@ function SelectionInput({ host, model }) {
     if (!open || !popupRef.current) return;
     cleanupRef.current = autoUpdate(triggerRef.current, popupRef.current, () => computePosition(triggerRef.current,
       popupRef.current, { placement: "bottom-start", strategy: "fixed", middleware: [offset(6), flip({ padding: 8 }),
-        shift({ padding: 8 }), size({ padding: 8, apply({ availableHeight, rects, elements }) {
-          Object.assign(elements.floating.style, { width: `${Math.max(280, rects.reference.width)}px`,
-            maxHeight: `${Math.max(240, availableHeight)}px` });
-        }})] }).then(({ x, y }) => Object.assign(popupRef.current.style,
+        shift({ padding: 8 }), size({ padding: 8, apply({ availableHeight, availableWidth, rects, elements }) {
+          Object.assign(elements.floating.style, { width: `${Math.max(0, Math.min(availableWidth, Math.max(280, rects.reference.width)))}px`,
+            maxHeight: `${Math.max(0, Math.min(480, availableHeight))}px` });
+        }})] }).then(({ x, y }) => popupRef.current && Object.assign(popupRef.current.style,
           { left: `${x}px`, top: `${y}px` })));
     requestAnimationFrame(() => (searchRef.current || popupRef.current)?.focus());
     const panel = popupRef.current;

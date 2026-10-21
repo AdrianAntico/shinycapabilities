@@ -56,8 +56,9 @@
   border-radius: 10px;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
   color: var(--sc-selection-text);
-  display: grid;
-  grid-template-rows: auto auto minmax(160px, 1fr) auto;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
   max-width: calc(100vw - 16px);
   opacity: 1;
   overflow: hidden;
@@ -100,7 +101,8 @@
   padding: 0.25rem 0.45rem;
 }
 .sc-selection-scroll {
-  min-height: 160px;
+  min-height: 0;
+  flex: 1 1 auto;
   max-height: 340px;
   overflow: auto;
   overscroll-behavior: contain;
@@ -200,3 +202,6 @@
   display: block;
   font-size: 0.75rem;
 }
+
+/* Keep chrome reachable while only the option list shrinks and scrolls. */
+.sc-selection-search-row, .sc-selection-commands, .sc-selection-status { flex: 0 0 auto; }
