@@ -116,17 +116,22 @@ function SelectionInput({ host, model }) {
 
   useLayoutEffect(() => {
     if (!open || !popupRef.current) return;
-    cleanupRef.current = autoUpdate(triggerRef.current, popupRef.current, () => computePosition(triggerRef.current,
-      popupRef.current, { placement: "bottom-start", strategy: "fixed", middleware: [offset(6), flip({ padding: 8 }),
+    const panel = popupRef.current;
+    let live = true, generation = 0;
+    const position = () => { const request = ++generation; return computePosition(triggerRef.current,
+      panel, { placement: "bottom-start", strategy: "fixed", middleware: [offset(6), flip({ padding: 8 }),
         shift({ padding: 8 }), size({ padding: 8, apply({ availableHeight, availableWidth, rects, elements }) {
           Object.assign(elements.floating.style, { width: `${Math.max(0, Math.min(availableWidth, Math.max(280, rects.reference.width)))}px`,
             maxHeight: `${Math.max(0, Math.min(480, availableHeight))}px` });
-        }})] }).then(({ x, y }) => popupRef.current && Object.assign(popupRef.current.style,
-          { left: `${x}px`, top: `${y}px` })));
-    requestAnimationFrame(() => (searchRef.current || popupRef.current)?.focus());
-    const panel = popupRef.current;
+        }})] }).then(({ x, y }) => {
+          if (live && request === generation) Object.assign(panel.style, { left: `${x}px`, top: `${y}px` });
+        }); };
+    // Host panels can move the trigger without a viewport resize or scroll.
+    // Floating UI compares the reference rect while this popup is open.
+    cleanupRef.current = autoUpdate(triggerRef.current, panel, position, { animationFrame: true });
+    requestAnimationFrame(() => live && (searchRef.current || panel)?.focus({ preventScroll: true }));
     window.ShinyCapabilitiesFoundation?.overlayOpen(panel, close, triggerRef.current);
-    return () => { cleanupRef.current?.(); cleanupRef.current = null;
+    return () => { live = false; cleanupRef.current?.(); cleanupRef.current = null;
       window.ShinyCapabilitiesFoundation?.overlayClose(panel, false); };
   }, [open]);
   useEffect(() => {

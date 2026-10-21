@@ -1,3 +1,7 @@
+# shinycapabilities 0.3.13
+
+- Keep open selection portals aligned when a scrolling/reactive host panel moves the trigger. Floating UI reference-rectangle tracking is active only while open; stale asynchronous positions are discarded and focus does not scroll the host.
+
 # shinycapabilities 0.3.12
 
 - Selection portals respect available viewport height and width. The option list shrinks and scrolls while search/close/status remain reachable; asynchronous positioning tolerates a closed portal. Restored-input semantics are unchanged.
