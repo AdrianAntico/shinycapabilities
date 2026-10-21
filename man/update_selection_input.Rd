@@ -15,7 +15,7 @@ update_selection_input(
 
 \item{inputId}{Input identifier.}
 
-\item{...}{Public model fields to update.}
+\item{...}{Public model fields to update. A changed selected/value field updates both the displayed selection and the subscribed Shiny input. It does not emit the separate user-gesture change channel.}
 }
 \description{
 Update an Analytics Selection System input

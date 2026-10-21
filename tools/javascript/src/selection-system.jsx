@@ -200,13 +200,21 @@ Object.assign(binding, {
     element._selectionRoot.render(<SelectionInput host={element} model={element._selectionModel}/>); metrics.initialized++; metrics.live++;
   },
   getValue(element) { return element._selectionValue || []; },
-  setValue(element, value) { element._selectionModel = { ...element._selectionModel, value: unique(value) };
+  setValue(element, value) { element._selectionValue = unique(value);
+    element._selectionModel = { ...element._selectionModel, value: element._selectionValue };
     element._selectionRoot?.render(<SelectionInput host={element} model={element._selectionModel}/>); },
   subscribe(element, callback) { element._selectionListener = () => callback(); element.addEventListener("selection:change", element._selectionListener); metrics.subscriptions++; },
   unsubscribe(element) { if (element._selectionListener) element.removeEventListener("selection:change", element._selectionListener); element._selectionListener = null; metrics.subscriptions--; },
-  receiveMessage(element, message) { element._selectionModel = { ...element._selectionModel, ...message,
-    value: message.value === undefined ? element._selectionValue : unique(message.value) };
-    element._selectionRoot?.render(<SelectionInput host={element} model={element._selectionModel}/>); },
+  receiveMessage(element, message) {
+    const previous = element._selectionValue || [];
+    const next = message.value === undefined ? previous : unique(message.value);
+    element._selectionValue = next.slice();
+    element._selectionModel = { ...element._selectionModel, ...message, value: next };
+    element._selectionRoot?.render(<SelectionInput host={element} model={element._selectionModel}/>);
+    // A server update must reach Shiny's subscribed value, not just React's display.
+    // This is not a user gesture: do not emit the separate *_change action channel.
+    if (!same(previous, next)) element.dispatchEvent(new CustomEvent("selection:change", { detail: next }));
+  },
   getState(element) { return { value: element._selectionValue || [] }; }
 });
 Shiny.inputBindings.register(binding, "shinycapabilities.selectionInput");

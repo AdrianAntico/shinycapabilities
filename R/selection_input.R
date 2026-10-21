@@ -70,7 +70,7 @@ selection_input <- function(inputId, label, groups, selected = character(), appl
 #' Update an Analytics Selection System input
 #' @param session Shiny session.
 #' @param inputId Input identifier.
-#' @param ... Public model fields to update.
+#' @param ... Public model fields to update. A changed selected/value field updates both the displayed selection and the subscribed Shiny input. It does not emit the separate user-gesture change channel.
 #' @export
 update_selection_input <- function(session = shiny::getDefaultReactiveDomain(), inputId, ...) {
   message <- list(...)

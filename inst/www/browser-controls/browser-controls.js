@@ -147,7 +147,13 @@
     controls.setValue = setValue;
     controls.subscribe = bindRoot;
     controls.unsubscribe = unbindRoot;
-    controls.receiveMessage = (root, message) => {setState(root, message || {});describe(root);};
+    controls.receiveMessage = (root, message) => {
+      const previous = value(root);
+      setState(root, message || {}); describe(root);
+      // Native property assignments do not emit input/change events themselves.
+      // Notify only a changed effective value; metadata-only updates stay quiet.
+      if (!Object.is(previous, value(root))) root.dispatchEvent(new Event("change"));
+    };
     controls.getState = (root) => ({ value: value(root), disabled: field(root)?.disabled || false,
       readonly: field(root)?.readOnly || false, required: field(root)?.required || false,
       loading: root.getAttribute('aria-busy') === 'true', error: root.querySelector('.sc-control-error')?.textContent || null,
