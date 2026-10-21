@@ -155,3 +155,22 @@ in [UI_FRAMEWORK_AUDIT_IMPLEMENTATION_1_0.md](UI_FRAMEWORK_AUDIT_IMPLEMENTATION_
 The [public surface inventory](UI_FRAMEWORK_PUBLIC_SURFACE.csv) includes all exports,
 including compatibility paths. This is not a declaration that every component is
 mobile, screen-reader, or production-scale qualified.
+
+## Primary checkouts and agent workspaces
+
+Keep the user's designated primary checkout on the canonical published default
+branch (`main`). Do agent development in a separate worktree or clone, using a
+`codex/` or other explicitly assigned development branch. Do not leave the primary
+checkout on a temporary development branch.
+
+Before alignment, record the branch, HEAD, remote, dirty/staged/untracked state,
+potentially affected ignored files, linked worktrees, and active users/processes.
+Preserve changes and development history in verified recoverable archives or refs.
+Never discard work or merge unqualified development merely to align the checkout.
+Fetch the actual remote default branch and use a non-force fast-forward only.
+If a checkout is in active use, leave it intact and explicitly designate a separate
+permanent primary checkout; document the new path to the user.
+
+At completion verify the designated primary path, branch, local and remote HEAD,
+working-tree status, preservation locations, and the source used for any local
+installation. Do not switch or terminate another agent's active environment.
