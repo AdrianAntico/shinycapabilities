@@ -1,3 +1,13 @@
+# shinycapabilities 0.3.10
+
+* Notify the existing Shiny visibility/resize observer after native tab selection,
+  allowing initially hidden outputs to render when opened. Ignore unavailable tab
+  targets and exclude disabled/hidden tabs from keyboard navigation.
+
+* Preserve Shiny output registration and direct-transport lifecycle classes when
+  a deferred data grid becomes visible. Grid density changes replace only grid-
+  owned density classes. Removal and rerender keep their existing binding identity.
+
 # shinycapabilities 0.3.9
 
 * Bind configuration actions to selection identity, preventing host state changes

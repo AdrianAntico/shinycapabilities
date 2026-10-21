@@ -209,11 +209,22 @@
   function selectTab(root, id, focus) {
     const list = root.querySelector(":scope > .sc-tab-list");
     const tabs = list ? [...list.querySelectorAll(":scope > [role=tab]")] : [];
+    if (!tabs.some(tab => tab.dataset.tabId === id && !tab.disabled &&
+      tab.getAttribute("aria-disabled") !== "true" && !tab.hidden)) return;
     tabs.forEach((tab) => {
       const on = tab.dataset.tabId === id; tab.setAttribute("aria-selected", String(on)); tab.tabIndex = on ? 0 : -1;
       if (on && focus) tab.focus();
     });
-    root.querySelectorAll(":scope > .sc-tab-panel").forEach((panel) => { panel.hidden = panel.id !== `${root.id}-panel-${id}`; });
+    root.querySelectorAll(":scope > .sc-tab-panel").forEach((panel) => {
+      const hidden = panel.id !== `${root.id}-panel-${id}`;
+      if (panel.hidden === hidden) return;
+      panel.hidden = hidden;
+      // Standard shown/hidden events are Shiny's public visibility bridge.
+      panel.dispatchEvent(new Event(hidden ? "hidden" : "shown", { bubbles: true }));
+    });
+    // Shiny suspends outputs hidden during initial binding. Exposing a native
+    // panel must also notify its existing resize/visibility observer.
+    notifyResize(root);
     emit(root, "select", { selected: id });
   }
 
@@ -222,7 +233,10 @@
     const keys = (event) => {
       const tab = event.target.closest('[role="tab"]'); if (!tab) return;
       if (tab.closest(".sc-tabs") !== root) return;
-      const tabs = [...root.querySelectorAll(":scope > .sc-tab-list > [role=tab]")]; let index = tabs.indexOf(tab);
+      const tabs = [...root.querySelectorAll(":scope > .sc-tab-list > [role=tab]")]
+        .filter(item => !item.disabled && item.getAttribute("aria-disabled") !== "true" && !item.hidden && getComputedStyle(item).display !== "none");
+      if (!tabs.length) return;
+      let index = tabs.indexOf(tab);
       if (event.key === "ArrowRight" || event.key === "ArrowDown") index = (index + 1) % tabs.length;
       else if (event.key === "ArrowLeft" || event.key === "ArrowUp") index = (index - 1 + tabs.length) % tabs.length;
       else if (event.key === "Home") index = 0; else if (event.key === "End") index = tabs.length - 1; else return;

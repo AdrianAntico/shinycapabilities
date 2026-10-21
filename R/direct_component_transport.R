@@ -75,7 +75,7 @@ direct_component_dependency <- function(component) {
   htmltools::htmlDependency(
     name = paste0("shinycapabilities-direct-", gsub("_", "-", component)),
     version = if (identical(component, "command_palette_direct")) "1.1.1" else
-      if (identical(component, "data_grid")) "1.2.0" else
+      if (identical(component, "data_grid")) "1.2.1" else
       if (identical(component, "capability_canvas")) "1.1.0" else
       if (identical(component, "object_inspector")) "1.1.0" else "1.0.0",
     src = c(file = normalizePath(root, winslash = "/", mustWork = TRUE)),

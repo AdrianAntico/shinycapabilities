@@ -166,7 +166,11 @@ function renderGrid(element, payload) {
   previous?.controller?.abort();
   previous?.api?.destroy();
   element.replaceChildren();
-  element.className = `html-widget sc-data-grid sc-data-grid--${payload.options.density}`;
+  // Deferred activation runs after Shiny has registered this element. Preserve
+  // transport, binding and host classes; the grid owns only its density classes.
+  [...element.classList].filter(name => name.startsWith("sc-data-grid--"))
+    .forEach(name => element.classList.remove(name));
+  element.classList.add("html-widget", "sc-data-grid", `sc-data-grid--${payload.options.density}`);
   const controller = new AbortController();
   const rows = rowRecords(payload.rows);
   gridInstances.set(element, { controller });
