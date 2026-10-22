@@ -77,7 +77,7 @@ testthat::test_that("Shiny inputs publish drafts without a second browser bridge
   testthat::expect_match(source, "shiny::isolate(config_drafts())", fixed = TRUE)
   testthat::expect_match(source, "Discard changes", fixed = TRUE)
   testthat::expect_match(source, "had_draft <- length(node_draft) > 0L", fixed = TRUE)
-  testthat::expect_match(source, "if (!had_draft || any(refresh))", fixed = TRUE)
+  testthat::expect_match(source, "if (!had_draft || !length(node_draft) || any(refresh))", fixed = TRUE)
   testthat::expect_match(source, "inspector_revision(inspector_revision() + 1L)", fixed = TRUE)
 })
 
@@ -93,4 +93,38 @@ testthat::test_that("configurable inspectors expose one state-aware sticky actio
   testthat::expect_match(css, "background: color-mix(in srgb, var(--sc-panel) 96%, var(--sc-bg))", fixed = TRUE)
   testthat::expect_match(css, "flex-wrap: wrap", fixed = TRUE)
   testthat::expect_match(css, ".sc-inspector > .shiny-html-output { overflow: visible !important; }", fixed = TRUE)
+})
+
+
+testthat::test_that("numeric equivalence and reverted edits do not leave false drafts", {
+  registry <- capability_registry()
+  capability_registry_add(registry, register_capability("neutral.normalized", "1.0.0", "Normalized", "Edit", "Neutral",
+    config = list(limit = config_field("numeric", "Limit", 10L), choices = config_field("multi_select", "Choices", character())),
+    execute = function(...) stop("No execution")))
+  graph <- list(nodes = list(list(id = "edit", capability_id = "neutral.normalized", config = list(limit = 10L, choices = character()), position = list(x = 0, y = 0))), edges = list())
+  shiny::testServer(capability_canvas_server, args = list(registry = registry, initial_graph = graph), {
+    session$flushReact()
+    session$setInputs(canvas_event = list(type = "node_selected", nodeId = "edit"))
+    session$flushReact()
+    session$setInputs(inspector_owner = "edit")
+    session$flushReact()
+    session$setInputs(node__edit__config__limit = 10)
+    session$flushReact()
+    testthat::expect_identical(session$returned$config_drafts(), list())
+    session$setInputs(node__edit__config__limit = 12)
+    session$flushReact()
+    testthat::expect_identical(session$returned$config_drafts()$edit$limit, 12)
+    session$setInputs(node__edit__config__limit = 10)
+    session$flushReact()
+    testthat::expect_identical(session$returned$config_drafts(), list())
+  })
+})
+
+
+testthat::test_that("semantic normalization preserves ordered field sequences", {
+  ordered <- config_field("multi_select", "Order", metadata = list(ordered = TRUE, mode = "multiple_ordered"))
+  testthat::expect_identical(config_semantic_value(list("year", "month"), ordered), c("year", "month"))
+  testthat::expect_false(identical(config_semantic_value(c("year", "month"), ordered), config_semantic_value(c("month", "year"), ordered)))
+  unordered <- config_field("multi_select", "Set", metadata = list(unordered = TRUE))
+  testthat::expect_identical(config_semantic_value(list("year", "month"), unordered), c("month", "year"))
 })

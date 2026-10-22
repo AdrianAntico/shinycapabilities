@@ -143,6 +143,21 @@ config_control <- function(namespace, name, definition, value = NULL) {
   )
 }
 
+config_semantic_value <- function(value, definition) {
+  value <- value %||% definition$default
+  if (definition$type %in% c("numeric", "slider")) return(as.numeric(value))
+  if (identical(definition$type, "checkbox")) return(isTRUE(value))
+  if (identical(definition$type, "multi_select")) {
+    values <- unique(as.character(unlist(value %||% character(), use.names = FALSE)))
+    ordered <- isTRUE(definition$metadata$ordered) || identical(definition$metadata$mode, "multiple_ordered")
+    unordered <- isTRUE(definition$metadata$unordered) || identical(definition$metadata$mode, "multiple_unordered")
+    return(if (unordered && !ordered) sort(values) else values)
+  }
+  if (definition$type %in% c("text", "select", "resource", "property", "expression"))
+    return(as.character(value %||% ""))
+  value
+}
+
 config_input_key <- function(node_id, name) {
   paste0("node__", node_id, "__config__", name)
 }
@@ -289,7 +304,8 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
       # The command address depends on selection, not the selected graph record.
       # Reading selected_node() here replays the last action-button value whenever
       # a host updates that node (for example ready -> blocked after Apply).
-      paste0(action, "__", configuration_node_key(selected_id() %||% "unselected"))
+      paste0(action, "__", configuration_node_key(selected_id() %||% "unselected"),
+        "__view", inspector_revision())
     }
     configuration_action_value <- function(action) input[[configuration_action_key(action)]]
 
@@ -385,17 +401,21 @@ capability_canvas_server <- function(id, registry, initial_graph = list(nodes = 
         drafts <- config_drafts()
         node_draft <- drafts[[node$id]] %||% list()
         had_draft <- length(node_draft) > 0L
-        changed <- names(values)[present][!vapply(names(values)[present], function(name) {
-          identical(node_draft[[name]] %||% node$config[[name]], values[[name]])
-        }, logical(1))]
-        if (!length(changed)) return()
-        node_draft[changed] <- values[changed]
-        drafts[[node$id]] <- node_draft
-        config_drafts(drafts)
+        previous_draft <- node_draft
+        for (name in names(values)[present]) {
+          value <- config_semantic_value(values[[name]], capability$config[[name]])
+          committed <- config_semantic_value(node$config[[name]], capability$config[[name]])
+          if (identical(value, committed)) node_draft[[name]] <- NULL
+          else node_draft[[name]] <- value
+        }
+        if (identical(previous_draft, node_draft)) return()
+        changed <- union(names(previous_draft), names(node_draft))
+        drafts[[node$id]] <- if (length(node_draft)) node_draft else NULL
+        config_drafts(if (length(drafts)) drafts else list())
         refresh <- vapply(changed, function(name) {
           isTRUE(capability$config[[name]]$metadata$refresh_dependents)
         }, logical(1))
-        if (!had_draft || any(refresh)) inspector_revision(inspector_revision() + 1L)
+        if (!had_draft || !length(node_draft) || any(refresh)) inspector_revision(inspector_revision() + 1L)
       })
     })
 
